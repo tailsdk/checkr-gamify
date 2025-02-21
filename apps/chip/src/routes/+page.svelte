@@ -4,6 +4,7 @@
   import Editor from '$lib/components/Editor.svelte';
   import type { MarkerData, MarkerSeverity, ParseResult } from 'chip-wasm';
   import Nav from '$lib/components/Nav.svelte';
+  import * as Generator from '$lib/generator.ts';
 
   let program = `{ true }
 if
@@ -134,4 +135,7 @@ fi
 			<pre class="p-4">{triple.smt}</pre>
 		{/each}
 	</div> -->
+</div>
+<div>
+  <button on:click={ e => program = Generator.generateProgram()}>Generate</button>
 </div>
