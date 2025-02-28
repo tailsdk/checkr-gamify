@@ -57,7 +57,26 @@ type Do = {
     multiplier: number;
 }
 
-export function generateProgram(length:number = getRandomInt(randomLength)+1, predefinedProgram:number[] = []): string {
+export function generateTemplate(selected:string): string{
+    switch (selected) {
+        case "Completly Random":
+            return generateProgram();
+        case "Skip":
+            return generateProgram(1, [0]);
+        case "Assign":
+            return generateProgram(1, [1]);
+        case "If Statement":
+            return generateProgram(1, [2]);   
+        case "Loop":
+            return generateProgram(1, [3]);
+    
+        default:   
+            break;
+    }
+    return "";
+}
+
+function generateProgram(length:number = getRandomInt(randomLength)+1, predefinedProgram:number[] = []): string {
     let program_obj: Program = {
         type: "program",
         variant: getRandomInt(2),

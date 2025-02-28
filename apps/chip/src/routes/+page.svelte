@@ -4,7 +4,7 @@
   import Editor from '$lib/components/Editor.svelte';
   import type { MarkerData, MarkerSeverity, ParseResult } from 'chip-wasm';
   import Nav from '$lib/components/Nav.svelte';
-  import * as Generator from '$lib/generator.ts';
+  import * as Generator from '$lib/generator';
 
   let program = `{ true }
 if
@@ -22,6 +22,15 @@ fi
   let verifications = writable<MarkerData[]>([]);
 
   let parseError = writable(false);
+
+  let selected = 'Completly Random';
+	let options = [
+		'Completly Random',
+		'Skip',
+		'Assign',
+    'If Statement',
+    'Loop'
+	];
 
   const STATES = ['idle', 'verifying', 'verified', 'error'] as const;
   type State = (typeof STATES)[number];
@@ -99,6 +108,12 @@ fi
 
 <div class="relative grid grid-rows-[2fr_auto_auto] overflow-hidden bg-slate-800">
   <Editor bind:value={program} markers={[...$result.markers, ...$verifications]} />
+  <div class="text-right items-center p-2 text-2xl text-white">
+    <select bind:value={selected} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
+      {#each options as value}<option {value}>{value}</option>{/each}
+    </select>
+    <button class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow" on:click={ e => program = Generator.generateTemplate(selected)}>Generate</button>
+  </div>
   <div
     class="flex items-center p-2 text-2xl text-white transition duration-500 {$parseError
       ? 'bg-purple-600'
@@ -135,7 +150,4 @@ fi
 			<pre class="p-4">{triple.smt}</pre>
 		{/each}
 	</div> -->
-</div>
-<div>
-  <button on:click={ e => program = Generator.generateProgram()}>Generate</button>
 </div>
