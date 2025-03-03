@@ -29,7 +29,8 @@ fi
 		'Skip',
 		'Assign',
     'If Statement',
-    'Loop'
+    'Loop',
+    'Guard',
 	];
 
   const STATES = ['idle', 'verifying', 'verified', 'error'] as const;

@@ -4,7 +4,7 @@ let randomLength = 5;
 type Program = {
     type: string;
     variant: number;
-    program: (Skip|Assign|If|Do)[];
+    program: (Skip|Assign|If|Do|Guard)[];
     program_template: number[];
     start: number[][];
     end: number[][];
@@ -54,7 +54,16 @@ type Do = {
     change2: number;
     variant: number;
     variant2: number;
-    multiplier: number;
+    multiplier: number[];
+}
+
+type Guard = {
+    type: string;
+    length: number;
+    program: (If)[];
+    end: number[][];
+    before: number[][];
+    bool: boolean;
 }
 
 export function generateTemplate(selected:string): string{
@@ -69,6 +78,8 @@ export function generateTemplate(selected:string): string{
             return generateProgram(1, [2]);   
         case "Loop":
             return generateProgram(1, [3]);
+        case "Guard":
+            return generateProgram(1, [4]);    
     
         default:   
             break;
@@ -97,7 +108,7 @@ function generateProgram(length:number = getRandomInt(randomLength)+1, predefine
     }
 
     for (let i = program_obj.program_template.length; i < program_obj.length; i++) {
-        program_obj.program_template.push(getRandomInt(4));
+        program_obj.program_template.push(getRandomInt(5));
     }
 
     for (let i = 0; i < program_obj.program_template.length; i++) {
@@ -113,6 +124,9 @@ function generateProgram(length:number = getRandomInt(randomLength)+1, predefine
                 break;
             case 3:
                 program_obj.program.push(generateDo(program_obj));
+                break;
+            case 4:
+                program_obj.program.push(generateGuard(program_obj));
                 break;
         
             default:
@@ -131,7 +145,7 @@ function generateSkip(){
     return skip;
 } 
 
-function generateAssign(program_obj:Program | If | Do, index:number = getRandomInt(program_obj.variable.length), multiplier:number = 1, variant:number = getRandomInt(3), assign:number = getRandomInt(randomValue)-10): Assign{
+function generateAssign(program_obj:Program | If | Do, index:number = getRandomInt(program_obj.variable.length), multiplier:number[] = [1], variant:number = getRandomInt(3), assign:number = getRandomInt(randomValue)-10): Assign{
     let assign_obj: Assign = {
         type: "assign",
         variant: variant,
@@ -150,12 +164,12 @@ function generateAssign(program_obj:Program | If | Do, index:number = getRandomI
                     break;
                 case 1:
                     for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] + assign_obj.assign * multiplier);
+                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] + assign_obj.assign * multiplier[j]);
                     }
                     break;
                 case 2:
                     for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] - assign_obj.assign * multiplier);
+                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] - assign_obj.assign * multiplier[j]);
                     }
                     break;
                 default:
@@ -168,12 +182,13 @@ function generateAssign(program_obj:Program | If | Do, index:number = getRandomI
             }
         }
     }
+    console.log(assign_obj.end[assign_obj.index]);
     assign_obj.end[assign_obj.index] = [ ...new Set(assign_obj.end[assign_obj.index])]
     program_obj.end[assign_obj.index] = assign_obj.end[assign_obj.index];
     return assign_obj;
 }
 
-function generateIf(program_obj: Program): If{
+function generateIf(program_obj: Program, isGuard:boolean = false): If{
     var if_obj: If = {
         type: "if",
         variant: getRandomInt(7),
@@ -377,7 +392,7 @@ function generateIf(program_obj: Program): If{
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
                 switch (program_obj.variable_inequality[if_obj.index]) {
                     case 0:
-                        if_obj.bool.push((program_obj.end[if_obj.index][i] != if_obj.value));
+                        if_obj.bool.push(!(program_obj.end[if_obj.index][i] == if_obj.value));
                         break;
                     case 1:
                         if_obj.bool.push(true);
@@ -413,6 +428,14 @@ function generateIf(program_obj: Program): If{
         default:
             break;
     }
+    if (isGuard){
+        for (let i = 0; i < if_obj.bool.length; i++) {
+            if (if_obj.bool[i]){
+                console.log("got here");
+                if_obj.bool = [true];
+            }
+        }
+    }
     switch (getRandomInt(2)) {
         case 0:
             if_obj.program.push(generateSkip());
@@ -433,41 +456,44 @@ function generateDo(program_obj:Program): Do{
         type: "do",
         value:  getRandomInt(20)-10,
         value2:  getRandomInt(20)-10,
-        index: getRandomInt(program_obj.variable.length),
-        index2: program_obj.variable.length,
+        index2: getRandomInt(program_obj.variable.length),
+        index: program_obj.variable.length,
         variable: [],
         variable_inequality: [],
         program: [],
         before: [],
         end: [],
-        bool: [true],
+        bool: [],
         change2: getRandomInt(20)-10,
         variant: 0,
         variant2: getRandomInt(2)+1,
-        multiplier: 1,
+        multiplier: [],
     };
     program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
-    program_obj.variable_inequality.push(getRandomInt(5));
     do_obj.variable = program_obj.variable;
     program_obj.variable_inequality[do_obj.index] = 0;
     do_obj.variable_inequality = program_obj.variable_inequality;
     program_obj.start.push([do_obj.value2]);
     program_obj.end.push([do_obj.value2]);
-    program_obj.end[do_obj.index] = [program_obj.end[do_obj.index][0]]
     do_obj.before = [...program_obj.end];
     do_obj.end = program_obj.end;
-    if(do_obj.value > program_obj.end[do_obj.index][0]){
-        do_obj.variant = 0;
-        do_obj.multiplier = do_obj.value - program_obj.end[do_obj.index][0];
-
-    } else if (do_obj.value < program_obj.end[do_obj.index][0]) {
+    if(do_obj.value < program_obj.end[do_obj.index][0]){
         do_obj.variant = 1;
-        do_obj.multiplier = program_obj.end[do_obj.index][0] - do_obj.value;
+
     } else {
-        do_obj.value += 1;
         do_obj.variant = 0;
-        do_obj.multiplier = do_obj.value - program_obj.end[do_obj.index][0];
     }
+    for (let i = 0; i < program_obj.end[do_obj.index].length; i++) {
+        do_obj.bool.push(true);
+        if(do_obj.variant == 0){
+            do_obj.multiplier.push(do_obj.value - program_obj.end[do_obj.index][i]);
+
+        } else if (do_obj.variant == 1) {
+            do_obj.multiplier.push(program_obj.end[do_obj.index][i] - do_obj.value);
+        }
+    }
+    console.log(do_obj.bool);
+    console.log(do_obj.multiplier);
     switch (do_obj.variant) {
         case 0:
             do_obj.program.push(generateAssign(do_obj, do_obj.index, do_obj.multiplier, 1, 1));
@@ -478,8 +504,51 @@ function generateDo(program_obj:Program): Do{
             break;
     }
     do_obj.program.push(generateAssign(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
+    do_obj.end[do_obj.index] = [do_obj.value];
     program_obj.end = do_obj.end;
     return do_obj;
+}
+
+function generateGuard(program_obj:Program): Guard{
+    var guard_obj: Guard = {
+        type: "guard",
+        length: getRandomInt(1)+2,
+        program: [],
+        end: [],
+        before: [],
+        bool: false,
+    }
+    for (let i = 0; i < program_obj.end.length; i++) {
+        guard_obj.end.push([]);
+        
+    }
+    guard_obj.before = [...program_obj.end]
+    for (let i = 0; i < guard_obj.length; i++) {
+        program_obj.end = [...guard_obj.before];
+        guard_obj.program.push(generateIf(program_obj, true));
+        for (let j = 0; j < guard_obj.end.length; j++) {
+            for (let k = 0; k < program_obj.end[j].length; k++) {
+                if(guard_obj.program[i].bool){
+                    guard_obj.bool = true;
+                    guard_obj.end[j].push(program_obj.end[j][k]);
+                }
+            }
+            
+        }
+
+        
+        
+    }
+    for (let i = 0; i < guard_obj.end.length; i++) {
+        guard_obj.end[i] = [ ...new Set(guard_obj.end[i])];
+        
+    }
+    if (guard_obj.bool){
+        program_obj.end = guard_obj.end;
+    }
+    console.log(...program_obj.end);
+    return guard_obj;
+
 }
 
 function getRandomInt(max:number): number{
@@ -575,10 +644,13 @@ function parseProgram(program_obj:Program): string{
                 programStr += parseAssign(program_obj.program[i] as Assign);
                 break;
             case "if":
-                programStr += parseIf(program_obj.program[i] as If);
+                programStr += parseIf(program_obj.program[i] as If, false);
                 break;
             case "do":
                 programStr += parseDo(program_obj.program[i] as Do, program_obj);
+                break;
+            case "guard":
+                programStr += parseGuard(program_obj.program[i] as Guard);
                 break;
             default:
                 break;
@@ -615,8 +687,11 @@ function parseAssign(assign_obj:Assign): string{
     }
 }
 
-function parseIf(if_obj:If): string{
+function parseIf(if_obj:If, isGuard:boolean): string{
     let ifStr:string = "if\n\t";
+    if (isGuard){
+        ifStr = "";
+    }
     switch (if_obj.variant) {
         case 0:
             ifStr += "true -> ";
@@ -653,7 +728,9 @@ function parseIf(if_obj:If): string{
         default:
             break;
     }
-    ifStr += "\nfi";
+    if (!isGuard){
+        ifStr += "\nfi";
+    }
     return ifStr;
 }
 
@@ -671,14 +748,16 @@ function parseDo(do_obj:Do, program_obj:Program): string{
                     doStr += do_obj.value + " >= " + do_obj.variable[i];
                 }
                 else if( i == do_obj.index2){
-                    if (do_obj.end[i].length > 1){
+                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
                         doStr += "( "
                     }
-                    for (let j = 0; j < do_obj.end[i].length; j++) {
-                        if (j > 0) {
+                    for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
+                        console.log(do_obj.before[do_obj.index2].length);
+                        console.log(do_obj.before[do_obj.index2]);
+                        if ( k > 0) {
                             doStr += " | ";
                         }
-                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i];
+                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][k];
                         if (do_obj.variant2 == 1){
                             doStr += " + ";
                         } else {
@@ -686,7 +765,8 @@ function parseDo(do_obj:Do, program_obj:Program): string{
                         }
                         doStr += do_obj.change2 + " * (" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + ")";
                     }
-                    if (do_obj.end[i].length > 1){
+                        
+                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
                         doStr += " )"
                     }
                 } else {
@@ -720,13 +800,27 @@ function parseDo(do_obj:Do, program_obj:Program): string{
                     doStr += do_obj.value + " <= " + do_obj.variable[i];
                 }
                 else if( i == do_obj.index2){
-                    doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i] 
-                    if (do_obj.variant2 == 1){
-                        doStr += " + ";
-                    } else {
-                        doStr += " - ";
+                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        doStr += "( "
                     }
-                    doStr += do_obj.change2 + " * (-(" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + "))";
+                    for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
+                        console.log(do_obj.before[do_obj.index2].length);
+                        console.log(do_obj.before[do_obj.index2]);
+                        if ( k > 0) {
+                            doStr += " | ";
+                        }
+                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][k];
+                        if (do_obj.variant2 == 1){
+                            doStr += " + ";
+                        } else {
+                            doStr += " - ";
+                        }
+                        doStr += do_obj.change2 + " * (-(" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + "))";
+                    }
+                        
+                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index].length > 1){
+                        doStr += " )"
+                    }
                 } else {
                     if (do_obj.end[i].length > 1){
                         doStr += "( "
@@ -769,4 +863,16 @@ function parseDo(do_obj:Do, program_obj:Program): string{
     }
     doStr += "\nod";
     return doStr;
+}
+
+function parseGuard(guard_obj: Guard): string{
+    let guard_str: string = "if\n\t";
+    for (let i = 0; i < guard_obj.length; i++) {
+        if (i > 0){
+            guard_str += "\n[]\n\t"
+        }
+        guard_str += parseIf(guard_obj.program[i] as If, true);
+    }
+    guard_str += "\nfi";
+    return guard_str;
 }
