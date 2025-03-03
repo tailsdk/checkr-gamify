@@ -54,7 +54,7 @@ type Do = {
     change2: number;
     variant: number;
     variant2: number;
-    multiplier: number[];
+    multiplier: number;
 }
 
 type Guard = {
@@ -145,7 +145,7 @@ function generateSkip(){
     return skip;
 } 
 
-function generateAssign(program_obj:Program | If | Do, index:number = getRandomInt(program_obj.variable.length), multiplier:number[] = [1], variant:number = getRandomInt(3), assign:number = getRandomInt(randomValue)-10): Assign{
+function generateAssign(program_obj:Program | If | Do, index:number = getRandomInt(program_obj.variable.length), multiplier:number = 1, variant:number = getRandomInt(3), assign:number = getRandomInt(randomValue)-10): Assign{
     let assign_obj: Assign = {
         type: "assign",
         variant: variant,
@@ -164,12 +164,12 @@ function generateAssign(program_obj:Program | If | Do, index:number = getRandomI
                     break;
                 case 1:
                     for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] + assign_obj.assign * multiplier[j]);
+                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] + assign_obj.assign * multiplier);
                     }
                     break;
                 case 2:
                     for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] - assign_obj.assign * multiplier[j]);
+                        assign_obj.end[assign_obj.index].push(program_obj.end[assign_obj.index][i] - assign_obj.assign * multiplier);
                     }
                     break;
                 default:
@@ -467,7 +467,7 @@ function generateDo(program_obj:Program): Do{
         change2: getRandomInt(20)-10,
         variant: 0,
         variant2: getRandomInt(2)+1,
-        multiplier: [],
+        multiplier: 1,
     };
     program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
     do_obj.variable = program_obj.variable;
@@ -482,15 +482,16 @@ function generateDo(program_obj:Program): Do{
 
     } else {
         do_obj.variant = 0;
-    }
-    for (let i = 0; i < program_obj.end[do_obj.index].length; i++) {
-        do_obj.bool.push(true);
-        if(do_obj.variant == 0){
-            do_obj.multiplier.push(do_obj.value - program_obj.end[do_obj.index][i]);
-
-        } else if (do_obj.variant == 1) {
-            do_obj.multiplier.push(program_obj.end[do_obj.index][i] - do_obj.value);
+        if (do_obj.value == 0){
+            do_obj.value += 1;
         }
+    }
+    do_obj.bool.push(true);
+    if(do_obj.variant == 0){
+        do_obj.multiplier = (do_obj.value - program_obj.end[do_obj.index][0]);
+
+    } else if (do_obj.variant == 1) {
+        do_obj.multiplier = program_obj.end[do_obj.index][0] - do_obj.value;
     }
     console.log(do_obj.bool);
     console.log(do_obj.multiplier);
