@@ -66,20 +66,31 @@ type Guard = {
     bool: boolean;
 }
 
-export function generateTemplate(selected:string): string{
+export function generateTemplate(selected:string, selected2:string): string{
+    let inequality:number = 1;
+    switch (selected2) {
+        case "Simple Inequality":
+            inequality = 1;
+            break;
+        case "Complex Inequality":
+            inequality = 5;
+            break;
+        default:   
+            break;
+    }
     switch (selected) {
         case "Completly Random":
-            return generateProgram();
+            return generateProgram(inequality);
         case "Skip":
-            return generateProgram(1, [0]);
+            return generateProgram(inequality, 1, [0]);
         case "Assign":
-            return generateProgram(1, [1]);
+            return generateProgram(inequality, 1, [1]);
         case "If Statement":
-            return generateProgram(1, [2]);   
+            return generateProgram(inequality, 1, [2]);   
         case "Loop":
-            return generateProgram(1, [3]);
+            return generateProgram(inequality, 1, [3]);
         case "Guard":
-            return generateProgram(1, [4]);    
+            return generateProgram(inequality, 1, [4]);    
     
         default:   
             break;
@@ -87,7 +98,7 @@ export function generateTemplate(selected:string): string{
     return "";
 }
 
-function generateProgram(length:number = getRandomInt(randomLength)+1, predefinedProgram:number[] = []): string {
+function generateProgram(inequality:number, length:number = getRandomInt(randomLength)+1, predefinedProgram:number[] = []): string {
     let program_obj: Program = {
         type: "program",
         variant: getRandomInt(2),
@@ -102,7 +113,7 @@ function generateProgram(length:number = getRandomInt(randomLength)+1, predefine
     };
     for (let i = 0; i <= getRandomInt(2); i++) {
         program_obj.variable.push(String.fromCharCode(97+i));
-        program_obj.variable_inequality.push(getRandomInt(5));
+        program_obj.variable_inequality.push(getRandomInt(inequality));
         program_obj.start.push([getRandomInt(randomValue)-10]);
         program_obj.end.push(program_obj.start[i])
     }
