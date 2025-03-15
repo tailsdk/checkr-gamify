@@ -6,6 +6,38 @@
   import Nav from '$lib/components/Nav.svelte';
   import * as Generator from '$lib/generator';
 
+  let program_answer:[string, string, string] = ["","",""];
+  let hide_answer = false;
+  function getProgram(){
+      program_answer = Generator.generateTemplate(selected_option, selected_option2);
+      program = program_answer[2];
+      program += program_answer[0];
+      if (!hide_answer) {
+        program += program_answer[1];
+      }
+      else {
+        program += "{ x }"
+      }
+      return;
+  }
+
+  function changeHide(){
+    if(program_answer[0] == ""){
+      return;
+    }
+    if (hide_answer) {
+      program = program_answer[2];
+      program += program_answer[0];
+      program += "{ x }"
+    }
+    else {
+      program = program_answer[2];
+      program += program_answer[0];
+      program += program_answer[1];
+    }
+    return;
+  }
+
   let program = `{ true }
 if
   false -> skip
@@ -47,7 +79,13 @@ fi
       parseError.set(false);
       const { default: init, parse } = await import('chip-wasm');
       await init();
-      const res = parse(program);
+      let res: ParseResult;
+      if (hide_answer){
+        res = parse(program_answer[2] + program + program_answer[1]);
+      }
+      else{
+        res = parse(program);
+      }
       if (res.parse_error) parseError.set(true);
       result.set(res);
     };
@@ -115,13 +153,17 @@ fi
 <div class="relative grid grid-rows-[2fr_auto_auto] overflow-hidden bg-slate-800">
   <Editor bind:value={program} markers={[...$result.markers, ...$verifications]} />
   <div class="text-right items-center p-2 text-2xl text-white">
+    <label>
+      <input type="checkbox" bind:checked={hide_answer} on:change={ e => changeHide()}/>
+      Hide asnwer
+    </label>
     <select bind:value={selected_option2} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
       {#each options2 as value}<option {value}>{value}</option>{/each}
     </select>
     <select bind:value={selected_option} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
       {#each options as value}<option {value}>{value}</option>{/each}
     </select>
-    <button class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow" on:click={ e => program = Generator.generateTemplate(selected_option, selected_option2)}>Generate</button>
+    <button class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow" on:click={ e => getProgram() }>Generate</button>
   </div>
   <div
     class="flex items-center p-2 text-2xl text-white transition duration-500 {$parseError
