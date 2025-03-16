@@ -1,12 +1,13 @@
 let randomValue = 20;
 let randomLength = 5;
-
+//Errors that should not be happening
 //{ a = 9 & b = -6 }
 //if
 //a < 8 -> b := b + 9
 //fi
 //{ a = 9 & b = 3 }
 
+//why weakest precondition does not work
 //{ a = 3 & b >= -6 }
 //if
 //b = -1 -> b := b + -8
@@ -22,6 +23,7 @@ type Program = {
     end: number[][];
     variable: string[];
     variable_inequality: number[];
+    starting_variable_inequality: number[];
     start_variables: number;
     length: number;
     bool: boolean[];
@@ -52,6 +54,7 @@ type If = {
     start: number[][];
     variable: string[];
     variable_inequality: number[];
+    guard_bool: boolean[];
 }
 
 type Do = {
@@ -79,8 +82,11 @@ type Guard = {
     program: (If)[];
     start: number[][];
     end: number[][];
+    new_end: number[][];
     before: number[][];
-    bool: boolean;
+    bool: boolean[];
+    variable: string[];
+    variable_inequality: number[];
 }
 
 export function generateTemplate(selected:string, selected2:string): [string, string, string]{
@@ -129,14 +135,16 @@ function generateProgramPost(inequality:number, length:number, predefinedProgram
         end: [],
         variable: [],
         variable_inequality: [],
+        starting_variable_inequality: [],
         length: length,
         bool: [true],
         start_variables: getRandomInt(2),
     };
     for (let i = 0; i <= program_obj.start_variables; i++) {
         program_obj.variable.push(String.fromCharCode(97+i));
-        program_obj.variable_inequality.push(getRandomInt(inequality));
+        program_obj.starting_variable_inequality.push(getRandomInt(inequality));
         program_obj.start.push([getRandomInt(randomValue)-10]);
+        program_obj.variable_inequality.push(program_obj.starting_variable_inequality[i]);
         program_obj.end.push(program_obj.start[i])
     }
 
@@ -238,7 +246,7 @@ function generateAssignPost(program_obj:Program | If | Do, index:number = getRan
     return assign_obj;
 }
 
-function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
+function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false): If{
     var if_obj: If = {
         type: "if",
         variant: getRandomInt(7),
@@ -246,15 +254,16 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
         program: [],
         value: getRandomInt(randomValue)-10,
         bool: [],
+        guard_bool: [],
         end: [...program_obj.end],
         start: [...program_obj.start],
         variable: program_obj.variable,
         variable_inequality: [],
     }
-    if_obj.variable_inequality = program_obj.variable_inequality;
+    if_obj.variable_inequality = [...program_obj.variable_inequality];
     console.log(program_obj.end[if_obj.index].length);
     console.log(if_obj.variant);
-    console.log(program_obj.variable_inequality[if_obj.index]);
+    console.log(if_obj.variable_inequality[if_obj.index]);
     console.log("done");
     switch (if_obj.variant) {
         case 0:
@@ -262,33 +271,25 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             break;
         case 1:
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
-                switch (program_obj.variable_inequality[if_obj.index]) {
+                switch (if_obj.variable_inequality[if_obj.index]) {
                     case 0:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] == if_obj.value));
                         break;
                     case 1:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] > if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((-10000 > if_obj.value));
                         break;
                     case 2:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((-10000 >= if_obj.value));
                         break;
                     case 3:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] < if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((10000 < if_obj.value));
                         break;
                     case 4:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((10000 <= if_obj.value));
                         break;
                 
                     default:
@@ -298,33 +299,25 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             break;
         case 2:
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
-                switch (program_obj.variable_inequality[if_obj.index]) {
+                switch (if_obj.variable_inequality[if_obj.index]) {
                     case 0:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] > if_obj.value));
                         break;
                     case 1:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] > if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((-10000 > if_obj.value));
                         break;
                     case 2:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] > if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((-10000 > if_obj.value));
                         break;
                     case 3:
-                        if_obj.bool.push((program_obj.end[if_obj.index][i] > if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
+                        if_obj.bool.push((10000 > if_obj.value));
                         break;
                     case 4:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] > if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((10000 > if_obj.value));
                         break;
                 
                     default:
@@ -334,33 +327,25 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             break;
         case 3:
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
-                switch (program_obj.variable_inequality[if_obj.index]) {
+                switch (if_obj.variable_inequality[if_obj.index]) {
                     case 0:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
                         break;
                     case 1:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((-10000 >= if_obj.value));
                         break;
                     case 2:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((-10000 >= if_obj.value));
                         break;
                     case 3:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((10000 >= if_obj.value));
                         break;
                     case 4:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] >= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((10000 >= if_obj.value));
                         break;
                 
                     default:
@@ -370,33 +355,25 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             break;
         case 4:
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
-                switch (program_obj.variable_inequality[if_obj.index]) {
+                switch (if_obj.variable_inequality[if_obj.index]) {
                     case 0:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] < if_obj.value));
                         break;
                     case 1:
-                        if_obj.bool.push((program_obj.end[if_obj.index][i] < if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
+                        if_obj.bool.push((-10000 <= if_obj.value));
                         break;
                     case 2:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] < if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((-10000 < if_obj.value));
                         break;
                     case 3:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] < if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((10000 < if_obj.value));
                         break;
                     case 4:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] < if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((10000 < if_obj.value));
                         break;
                 
                     default:
@@ -406,33 +383,25 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             break;
         case 5:
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
-                switch (program_obj.variable_inequality[if_obj.index]) {
+                switch (if_obj.variable_inequality[if_obj.index]) {
                     case 0:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
                         break;
                     case 1:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((-10000 <= if_obj.value));
                         break;
                     case 2:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
+                        if_obj.bool.push((-10000 <= if_obj.value));
                         break;
                     case 3:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((10000 <= if_obj.value));
                         break;
                     case 4:
                         if_obj.bool.push((program_obj.end[if_obj.index][i] <= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push((10000 <= if_obj.value));
                         break;
                 
                     default:
@@ -442,33 +411,25 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             break;
         case 6:
             for (let i = 0; i < program_obj.end[if_obj.index].length; i++) {
-                switch (program_obj.variable_inequality[if_obj.index]) {
+                switch (if_obj.variable_inequality[if_obj.index]) {
                     case 0:
                         if_obj.bool.push(!(program_obj.end[if_obj.index][i] == if_obj.value));
                         break;
                     case 1:
-                        if_obj.bool.push(true);
-                        if((program_obj.end[if_obj.index][i] > if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push(!(program_obj.end[if_obj.index][i] > if_obj.value));
+                        if_obj.bool.push(!(-10000 > if_obj.value));
                         break;
                     case 2:
-                        if_obj.bool.push(true);
-                        if((program_obj.end[if_obj.index][i] >= if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push(!(program_obj.end[if_obj.index][i] >= if_obj.value));
+                        if_obj.bool.push(!(-10000 >= if_obj.value));
                         break;
                     case 3:
-                        if_obj.bool.push(true);
-                        if((program_obj.end[if_obj.index][i] < if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push(!(program_obj.end[if_obj.index][i] < if_obj.value));
+                        if_obj.bool.push(!(10000 < if_obj.value));
                         break;
                     case 4:
-                        if_obj.bool.push(true);
-                        if((program_obj.end[if_obj.index][i] <= if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
+                        if_obj.bool.push(!(program_obj.end[if_obj.index][i] <= if_obj.value));
+                        if_obj.bool.push(!(10000 <= if_obj.value));
                         break;
                 
                     default:
@@ -482,6 +443,7 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
     }
     console.log([...if_obj.bool]);
     if (isGuard){
+        if_obj.guard_bool = [...if_obj.bool];
         for (let i = 0; i < if_obj.bool.length; i++) {
             if (if_obj.bool[i]){
                 if_obj.bool = [true];
@@ -493,13 +455,19 @@ function generateIfPost(program_obj: Program, isGuard:boolean = false): If{
             if_obj.program.push(generateSkip());
             break;
         case 1:
-            if_obj.program.push(generateAssignPost(if_obj));
+            if (isGuard){ 
+                if_obj.program.push(generateAssignPost(if_obj, getRandomInt(program_obj.variable.length), 1, getRandomInt(2)+1));
+            }
+            else{
+                if_obj.program.push(generateAssignPost(if_obj));
+            }
             break;
     
         default:
             break;
     }
     program_obj.end = if_obj.end;
+    program_obj.variable_inequality = [...if_obj.variable_inequality]
     return if_obj;
 }
 
@@ -524,8 +492,9 @@ function generateDoPost(program_obj:Program): Do{
     };
     program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
     do_obj.variable = program_obj.variable;
-    program_obj.variable_inequality[do_obj.index] = 0;
-    do_obj.variable_inequality = program_obj.variable_inequality;
+    program_obj.variable_inequality.push(0);
+    program_obj.starting_variable_inequality.push(0);
+    do_obj.variable_inequality = [...program_obj.variable_inequality];
     program_obj.start.push([do_obj.value2]);
     program_obj.end.push([do_obj.value2]);
     do_obj.before = [...program_obj.end];
@@ -565,45 +534,68 @@ function generateDoPost(program_obj:Program): Do{
 function generateGuardPost(program_obj:Program): Guard{
     var guard_obj: Guard = {
         type: "guard",
-        length: getRandomInt(1)+2,
+        length: getRandomInt(2)+2,
         program: [],
-        end: [],
+        end: [...program_obj.end],
+        new_end: [],
         start: [],
-        before: [],
-        bool: false,
+        before: [...program_obj.end],
+        bool: [],
+        variable: [...program_obj.variable],
+        variable_inequality: [...program_obj.variable_inequality],
     }
+    let bool:boolean = false;
+    let true_counter:number = 0;
     for (let i = 0; i < program_obj.end.length; i++) {
-        guard_obj.end.push([]);
+        guard_obj.new_end.push([]);
         
     }
     guard_obj.before = [...program_obj.end]
     for (let i = 0; i < guard_obj.length; i++) {
-        program_obj.end = [...guard_obj.before];
-        guard_obj.program.push(generateIfPost(program_obj, true));
+        guard_obj.end = [...guard_obj.before];
+        guard_obj.program.push(generateIfPost(guard_obj, true));
         for (let j = 0; j < guard_obj.end.length; j++) {
             for (let k = 0; k < program_obj.end[j].length; k++) {
-                if(guard_obj.program[i].bool[0]){
-                    guard_obj.bool = true;
-                    guard_obj.end[j].push(program_obj.end[j][k]);
+                if (guard_obj.program[i].bool[0]){
+                    for (let u = 0; u < guard_obj.program[i].guard_bool.length; u++) {
+                        if(guard_obj.program[i].guard_bool[u]){
+                            true_counter += 1;
+                        }
+                        else{
+                            true_counter -= 1000;
+                        }
+                    }
+                    bool = true;
+                    guard_obj.new_end[j].push(guard_obj.end[j][k]);
                 }
             }
             
         }
-
-        
+        for (let u = 0; u < guard_obj.program[i].guard_bool.length; u++) {
+            guard_obj.bool.push(guard_obj.program[i].guard_bool[u]);
+            
+        }
+    }
+    if(true_counter == 0){
+        for (let i = 0; i < guard_obj.before.length; i++) {
+            for (let j = 0; j < guard_obj.before[i].length; j++) {
+                guard_obj.new_end[i].push(guard_obj.before[i][j]);
+            }
+            
+        }
+    }
+    for (let i = 0; i < guard_obj.new_end.length; i++) {
+        guard_obj.new_end[i] = [ ...new Set(guard_obj.new_end[i])];
         
     }
-    for (let i = 0; i < guard_obj.end.length; i++) {
-        guard_obj.end[i] = [ ...new Set(guard_obj.end[i])];
-        
-    }
-    if (guard_obj.bool){
-        program_obj.end = guard_obj.end;
+    if (bool){
+        program_obj.end = guard_obj.new_end;
+        program_obj.variable_inequality = guard_obj.variable_inequality;
     }
     return guard_obj;
 
 }
-
+/*
 function generateProgramPre(inequality:number, length:number, predefinedProgram:number[]): [string, string, string] {
     let program_obj: Program = {
         type: "program",
@@ -1105,6 +1097,7 @@ function generateGuardPre(program_obj:Program): Guard{
     return guard_obj;
 
 }
+*/
 
 function getRandomInt(max:number): number{
     return Math.floor(Math.random() * max);
@@ -1141,7 +1134,7 @@ function assembleProgram(program_obj:Program): [string, string, string]{
                 programStrStart += "& ";
                 programStrEnd += "& ";
             }
-            programStrStart += program_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + program_obj.start[i][0] + " ";
+            programStrStart += program_obj.variable[i] + getInequality(program_obj.starting_variable_inequality[i]) + program_obj.start[i][0] + " ";
             if (program_obj.end[i].length > 1){
                 programStrEnd += "( "
             }
@@ -1174,7 +1167,7 @@ function assembleProgram(program_obj:Program): [string, string, string]{
                 if (j > 0) {
                     programStr += "| ";
                 }
-                programStr += program_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + program_obj.start[i][j] + " ";
+                programStr += program_obj.variable[i] + getInequality(program_obj.starting_variable_inequality[i]) + program_obj.start[i][j] + " ";
                 
             }
             if (program_obj.start[i].length > 1){
@@ -1313,14 +1306,14 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                     doStr += do_obj.value + " >= " + do_obj.variable[i];
                 }
                 else if( i == do_obj.index2){
-                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                    if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
                         doStr += "( "
                     }
                     for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
                         if ( k > 0) {
                             doStr += " | ";
                         }
-                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][k];
+                        doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][k];
                         if (do_obj.variant2 == 1){
                             doStr += " + ";
                         } else {
@@ -1329,26 +1322,26 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         doStr += do_obj.change2 + " * (" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + ")";
                     }
                         
-                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
-                        doStr += " )"
+                    if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        doStr += ")"
                     }
                 } else {
-                    if (do_obj.end[i].length > 1){
+                    if (do_obj.before[i].length > 1){
                         doStr += "( "
                     }
-                    for (let j = 0; j < do_obj.end[i].length; j++) {
+                    for (let j = 0; j < do_obj.before[i].length; j++) {
                         if (j > 0) {
                             doStr += " | ";
                         }
-                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][j];
+                        doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][j];
                     }
-                    if (do_obj.end[i].length > 1){
+                    if (do_obj.before[i].length > 1){
                         doStr += " )";
                     }
                 }
             }
             for (let i = do_obj.before.length; i < program_obj.start.length; i++){
-                doStr += " & " + program_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + program_obj.start[i];
+                doStr += " & " + program_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + program_obj.start[i];
             }
             doStr += " ]\n\t";
             doStr += do_obj.value + " > " + do_obj.variable[do_obj.index] + " -> "
@@ -1363,14 +1356,14 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                     doStr += do_obj.value + " <= " + do_obj.variable[i];
                 }
                 else if( i == do_obj.index2){
-                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                    if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
                         doStr += "( "
                     }
                     for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
                         if ( k > 0) {
                             doStr += " | ";
                         }
-                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][k];
+                        doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][k];
                         if (do_obj.variant2 == 1){
                             doStr += " + ";
                         } else {
@@ -1379,26 +1372,26 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         doStr += do_obj.change2 + " * (-(" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + "))";
                     }
                         
-                    if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index].length > 1){
-                        doStr += " )";
+                    if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        doStr += ")";
                     }
                 } else {
-                    if (do_obj.end[i].length > 1){
+                    if (do_obj.before[i].length > 1){
                         doStr += "( "
                     }
-                    for (let j = 0; j < do_obj.end[i].length; j++) {
+                    for (let j = 0; j < do_obj.before[i].length; j++) {
                         if (j > 0) {
                             doStr += " | ";
                         }
-                        doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][j];
+                        doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][j];
                     }
-                    if (do_obj.end[i].length > 1){
+                    if (do_obj.before[i].length > 1){
                         doStr += " )"
                     }
                 }
             }
             for (let i = do_obj.before.length; i < program_obj.start.length; i++){
-                doStr += " & " + program_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + program_obj.start[i];
+                doStr += " & " + program_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + program_obj.start[i];
             }
             doStr += " ]\n\t";
             doStr += do_obj.value + " < " + do_obj.variable[do_obj.index] + " -> "
