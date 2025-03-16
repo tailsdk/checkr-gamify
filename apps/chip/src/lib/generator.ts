@@ -96,7 +96,7 @@ export function generateTemplate(selected:string, selected2:string): [string, st
             break;
     }
     switch (selected) {
-        case "Completly Random":
+        case "Completely Random":
             let template:number[] = [];
             for (let i = 0; i < getRandomInt(randomLength)+1; i++) {
                 template.push(getRandomInt(5));
@@ -110,7 +110,7 @@ export function generateTemplate(selected:string, selected2:string): [string, st
             return generateProgramPost(inequality, 1, [2]);   
         case "Loop":
             return generateProgramPost(inequality, 1, [3]);
-        case "Guard":
+        case "Multiple If Statements":
             return generateProgramPost(inequality, 1, [4]);    
     
         default:   
@@ -1343,7 +1343,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         doStr += do_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + do_obj.before[i][j];
                     }
                     if (do_obj.end[i].length > 1){
-                        doStr += " )"
+                        doStr += " )";
                     }
                 }
             }
@@ -1380,7 +1380,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                     }
                         
                     if (do_obj.end[i].length > 1 || do_obj.before[do_obj.index].length > 1){
-                        doStr += " )"
+                        doStr += " )";
                     }
                 } else {
                     if (do_obj.end[i].length > 1){

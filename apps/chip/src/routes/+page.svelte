@@ -55,14 +55,14 @@ fi
 
   let parseError = writable(false);
 
-  let selected_option = 'Completly Random';
+  let selected_option = 'Completely Random';
 	let options = [
-		'Completly Random',
+		'Completely Random',
 		'Skip',
 		'Assign',
     'If Statement',
     'Loop',
-    'Guard',
+    'Multiple If Statements',
 	];
   let selected_option2 = 'Simple Inequality';
 	let options2 = [
