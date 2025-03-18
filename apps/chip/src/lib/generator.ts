@@ -107,17 +107,17 @@ export function generateTemplate(selected:string, selected2:string): [string, st
             for (let i = 0; i < getRandomInt(randomLength)+1; i++) {
                 template.push(getRandomInt(5));
             }
-            return generateProgramPost(inequality, template.length, template);
+            return generateProgramPost(inequality, template);
         case "Skip":
-            return generateProgramPost(inequality, 1, [0]);
+            return generateProgramPost(inequality, [0]);
         case "Assign":
-            return generateProgramPost(inequality, 1, [1]);
+            return generateProgramPost(inequality, [1]);
         case "If Statement":
-            return generateProgramPost(inequality, 1, [2]);   
+            return generateProgramPost(inequality, [2]);   
         case "Loop":
-            return generateProgramPost(inequality, 1, [3]);
+            return generateProgramPost(inequality, [3]);
         case "Multiple If Statements":
-            return generateProgramPost(inequality, 1, [4]);    
+            return generateProgramPost(inequality, [4]);    
     
         default:   
             break;
@@ -125,7 +125,7 @@ export function generateTemplate(selected:string, selected2:string): [string, st
     return ["","", ""];
 }
 
-function generateProgramPost(inequality:number, length:number, predefinedProgram:number[]): [string, string, string] {
+function generateProgramPost(inequality:number, predefinedProgram:number[]): [string, string, string] {
     let program_obj: Program = {
         type: "program",
         variant: 0,
@@ -136,11 +136,11 @@ function generateProgramPost(inequality:number, length:number, predefinedProgram
         variable: [],
         variable_inequality: [],
         starting_variable_inequality: [],
-        length: length,
+        length: predefinedProgram.length,
         bool: [true],
-        start_variables: getRandomInt(2),
+        start_variables: getRandomInt(2)+1,
     };
-    for (let i = 0; i <= program_obj.start_variables; i++) {
+    for (let i = 0; i < program_obj.start_variables; i++) {
         program_obj.variable.push(String.fromCharCode(97+i));
         program_obj.starting_variable_inequality.push(getRandomInt(inequality));
         program_obj.start.push([getRandomInt(randomValue)-10]);
