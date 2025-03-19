@@ -16,7 +16,7 @@
         program += program_answer[1];
       }
       else {
-        program += "{ x }"
+        program += "// Write the strongest post condition below \n{ }";
       }
       return;
   }
@@ -28,7 +28,7 @@
     if (hide_answer) {
       program = program_answer[2];
       program += program_answer[0];
-      program += "{ x }"
+      program += "// Write the strongest post condition below \n{ }";
     }
     else {
       program = program_answer[2];
@@ -152,18 +152,23 @@ fi
 
 <div class="relative grid grid-rows-[2fr_auto_auto] overflow-hidden bg-slate-800">
   <Editor bind:value={program} markers={[...$result.markers, ...$verifications]} />
-  <div class="text-right items-center p-2 text-2xl text-white">
-    <label>
-      <input type="checkbox" bind:checked={hide_answer} on:change={ e => changeHide()}/>
-      Hide asnwer
-    </label>
-    <select bind:value={selected_option2} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
-      {#each options2 as value}<option {value}>{value}</option>{/each}
-    </select>
-    <select bind:value={selected_option} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
-      {#each options as value}<option {value}>{value}</option>{/each}
-    </select>
-    <button class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow" on:click={ e => getProgram() }>Generate</button>
+  <div class="items-center p-2 text-2xl text-white">
+    <div class="items-center text-left p-5 text-2xl text-white" style="float:left">
+      <a class="bg-green-600 hover:bg-green-400 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow text-left" href="https://forms.gle/76YNJLrSbsEFte8N8">Click here to answer the survey</a>
+    </div>
+    <div class="items-center text-right p-2 text-2xl text-white" style="float:right">
+      <label>
+        <input type="checkbox" bind:checked={hide_answer} on:change={ e => changeHide()}/>
+        Hide answer
+      </label>
+      <select bind:value={selected_option2} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
+        {#each options2 as value}<option {value}>{value}</option>{/each}
+      </select>
+      <select bind:value={selected_option} class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow">
+        {#each options as value}<option {value}>{value}</option>{/each}
+      </select>
+      <button class="bg-slate-900 hover:bg-slate-600 text-white font-semibold py-2 px-4 border border-gray-400 rounded shadow" on:click={ e => getProgram() }>Generate</button>
+    </div>
   </div>
   <div
     class="flex items-center p-2 text-2xl text-white transition duration-500 {$parseError
