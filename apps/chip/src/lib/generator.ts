@@ -570,7 +570,7 @@ function generateGuardPost(program_obj:Program): Guard{
             }
         }
     }
-    if(program_obj.bool){
+    if(program_obj.bool.indexOf(true) > -1){
         for (let i = 0; i < guard_obj.new_end.length; i++) {
             guard_obj.new_end[i] = [ ...new Set(guard_obj.new_end[i])];
             
