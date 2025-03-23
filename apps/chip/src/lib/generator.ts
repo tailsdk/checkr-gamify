@@ -1,5 +1,14 @@
 let randomValue = 20;
 let randomLength = 5;
+/*
+{ a = -4 & b = -1 }
+if
+	true -> a := a - 2
+[]
+	a >= -4 -> skip
+fi
+{ a = -6 & b = -1 }
+ */
 
 type Program = {
     type: string;
@@ -63,6 +72,7 @@ type Do = {
     variant: number;
     variant2: number;
     multiplier: number;
+    program_variant: number;
 }
 
 type Guard = {
@@ -71,7 +81,7 @@ type Guard = {
     program: (If)[];
     start: number[][];
     end: number[][];
-    new_end: number[][];
+    new_value: number[][];
     before: number[][];
     bool: boolean[];
     variable: string[];
@@ -79,8 +89,9 @@ type Guard = {
     can_be_stuck: boolean;
 }
 
-export function generateTemplate(selected:string, selected2:string): [string, string, string]{
+export function generateTemplate(selected:string, selected2:string): [string, string, string, number]{
     let inequality:number = 1;
+    let template:number[] = [];
     switch (selected2) {
         case "Simple Inequality":
             inequality = 1;
@@ -93,29 +104,42 @@ export function generateTemplate(selected:string, selected2:string): [string, st
     }
     switch (selected) {
         case "Completely Random":
-            let template:number[] = [];
             for (let i = 0; i < getRandomInt(randomLength)+1; i++) {
                 template.push(getRandomInt(5));
             }
-            return generateProgramPost(inequality, template);
+            break;
         case "Skip":
-            return generateProgramPost(inequality, [0]);
+            template = [0];
+            break;
         case "Assign":
-            return generateProgramPost(inequality, [1]);
+            template = [1];
+            break;
         case "If Statement":
-            return generateProgramPost(inequality, [2]);   
+            template = [2];
+            break;   
         case "Loop":
-            return generateProgramPost(inequality, [3]);
+            template = [3];
+            break;
         case "Multiple If Statements":
-            return generateProgramPost(inequality, [4]);    
+            template = [4];
+            break;   
     
         default:   
             break;
     }
-    return ["","", ""];
+    switch (getRandomInt(2)) {
+        case 0:
+            return generateProgramPost(inequality, template);
+        case 1:
+            return generateProgramPre(inequality, template);
+    
+        default:
+            break;
+    }
+    return ["","", "", -1];
 }
 
-function generateProgramPost(inequality:number, predefinedProgram:number[]): [string, string, string] {
+function generateProgramPost(inequality:number, predefinedProgram:number[]): [string, string, string, number] {
     let program_obj: Program = {
         type: "program",
         variant: 0,
@@ -491,6 +515,7 @@ function generateDoPost(program_obj:Program): Do{
         variant: 0,
         variant2: getRandomInt(2)+1,
         multiplier: 1,
+        program_variant: 0,
     };
     program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
     do_obj.variable = program_obj.variable;
@@ -538,16 +563,16 @@ function generateGuardPost(program_obj:Program): Guard{
         length: getRandomInt(2)+2,
         program: [],
         end: [...program_obj.end],
-        new_end: [],
+        new_value: [],
         start: [],
         before: [...program_obj.end],
         bool: [false],
         variable: [...program_obj.variable],
         variable_inequality: [...program_obj.variable_inequality],
-        can_be_stuck: true,
+        can_be_stuck: false,
     }
     for (let i = 0; i < program_obj.end.length; i++) {
-        guard_obj.new_end.push([]);
+        guard_obj.new_value.push([]);
         
     }
     guard_obj.before = [...program_obj.end]
@@ -558,12 +583,12 @@ function generateGuardPost(program_obj:Program): Guard{
             for (let j = 0; j < guard_obj.end.length; j++) {
                 for (let k = 0; k < program_obj.end[j].length; k++) {
                     if (guard_obj.program[i].bool[0]){
-                        guard_obj.new_end[j].push(guard_obj.program[i].end[j][k]);
+                        guard_obj.new_value[j].push(guard_obj.program[i].end[j][k]);
                         if (!guard_obj.bool[0]) {
                             guard_obj.bool = [true];
                         }
                         if (!guard_obj.program[i].can_be_stuck && guard_obj.can_be_stuck){
-                            guard_obj.can_be_stuck = false;
+                            guard_obj.can_be_stuck = true;
                         }
                     }
                 } 
@@ -571,11 +596,11 @@ function generateGuardPost(program_obj:Program): Guard{
         }
     }
     if(program_obj.bool.indexOf(true) > -1){
-        for (let i = 0; i < guard_obj.new_end.length; i++) {
-            guard_obj.new_end[i] = [ ...new Set(guard_obj.new_end[i])];
+        for (let i = 0; i < guard_obj.new_value.length; i++) {
+            guard_obj.new_value[i] = [ ...new Set(guard_obj.new_value[i])];
             
         }
-        program_obj.end = guard_obj.new_end;
+        program_obj.end = guard_obj.new_value;
         program_obj.variable_inequality = guard_obj.variable_inequality;
         program_obj.bool = guard_obj.bool;
         if (!program_obj.can_be_stuck){
@@ -585,8 +610,8 @@ function generateGuardPost(program_obj:Program): Guard{
     return guard_obj;
 
 }
-/*
-function generateProgramPre(inequality:number, length:number, predefinedProgram:number[]): [string, string, string] {
+
+function generateProgramPre(inequality:number, predefinedProgram:number[]): [string, string, string, number] {
     let program_obj: Program = {
         type: "program",
         variant: 1,
@@ -596,33 +621,36 @@ function generateProgramPre(inequality:number, length:number, predefinedProgram:
         end: [],
         variable: [],
         variable_inequality: [],
-        length: length,
+        starting_variable_inequality: [],
+        length: predefinedProgram.length,
         bool: [true],
-        start_variables: getRandomInt(2),
+        start_variables: getRandomInt(2)+1,
+        can_be_stuck: false,
     };
-    for (let i = 0; i <= program_obj.start_variables; i++) {
+    for (let i = 0; i < program_obj.start_variables; i++) {
         program_obj.variable.push(String.fromCharCode(97+i));
-        program_obj.variable_inequality.push(getRandomInt(inequality));
+        program_obj.starting_variable_inequality.push(getRandomInt(inequality));
         program_obj.start.push([getRandomInt(randomValue)-10]);
+        program_obj.variable_inequality.push(program_obj.starting_variable_inequality[i]);
         program_obj.end.push(program_obj.start[i])
     }
 
-    for (let i = 0; i < program_obj.program_template.length; i++) {
+    for (let i = program_obj.length-1; i >= 0; i--) {
         switch (program_obj.program_template[i]) {
             case 0:
-                program_obj.program.push(generateSkip());
+                program_obj.program.unshift(generateSkip());
                 break;
             case 1:
-                program_obj.program.push(generateAssignPre(program_obj));
+                program_obj.program.unshift(generateAssignPre(program_obj));
                 break;
             case 2:
-                program_obj.program.push(generateIfPre(program_obj));
+                program_obj.program.unshift(generateIfPre(program_obj));
                 break;
             case 3:
-                program_obj.program.push(generateDoPre(program_obj));
+                program_obj.program.unshift(generateDoPre(program_obj));
                 break;
             case 4:
-                program_obj.program.push(generateGuardPre(program_obj));
+                program_obj.program.unshift(generateGuardPre(program_obj));
                 break;
         
             default:
@@ -663,20 +691,20 @@ function generateAssignPre(program_obj:Program | If | Do, index:number = getRand
         assign: assign,
         variable: program_obj.variable,
         end: [...program_obj.end],
-        start: [...program_obj.end],
+        start: [...program_obj.start],
     }
     assign_obj.start[assign_obj.index] = [];
     for (let j = 0; j < program_obj.bool.length; j++) {
         if(program_obj.bool[j]){
             switch (assign_obj.variant) {
                 case 1:
-                    for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                        assign_obj.start[assign_obj.index].push(program_obj.end[assign_obj.index][i] - assign_obj.assign * multiplier);
+                    for (let i = 0; i < program_obj.start[assign_obj.index].length; i++) {
+                        assign_obj.start[assign_obj.index].push(program_obj.start[assign_obj.index][i] - assign_obj.assign * multiplier);
                     }
                     break;
                 case 2:
-                    for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                        assign_obj.start[assign_obj.index].push(program_obj.end[assign_obj.index][i] + assign_obj.assign * multiplier);
+                    for (let i = 0; i < program_obj.start[assign_obj.index].length; i++) {
+                        assign_obj.start[assign_obj.index].push(program_obj.start[assign_obj.index][i] + assign_obj.assign * multiplier);
                     }
                     break;
                 default:
@@ -684,8 +712,8 @@ function generateAssignPre(program_obj:Program | If | Do, index:number = getRand
             }
         }
         else {
-            for (let i = 0; i < program_obj.end[assign_obj.index].length; i++) {
-                assign_obj.start[assign_obj.index].push(program_obj.end[assign_obj.index][i]);
+            for (let i = 0; i < program_obj.start[assign_obj.index].length; i++) {
+                assign_obj.start[assign_obj.index].push(program_obj.start[assign_obj.index][i]);
             }
         }
     }
@@ -694,7 +722,7 @@ function generateAssignPre(program_obj:Program | If | Do, index:number = getRand
     return assign_obj;
 }
 
-function generateIfPre(program_obj: Program, isGuard:boolean = false): If{
+function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false): If{
     var if_obj: If = {
         type: "if",
         variant: getRandomInt(7),
@@ -702,17 +730,19 @@ function generateIfPre(program_obj: Program, isGuard:boolean = false): If{
         program: [],
         value: getRandomInt(randomValue)-10,
         bool: [true],
+        guard_bool: [],
         end: [...program_obj.end],
-        start: [...program_obj.end],
+        start: [...program_obj.start],
         variable: program_obj.variable,
-        variable_inequality: program_obj.variable_inequality,
+        variable_inequality: [],
+        can_be_stuck: program_obj.can_be_stuck,
     }
-    if_obj.variant = 1;
+    if_obj.variable_inequality = [...program_obj.variable_inequality];
     console.log(program_obj.end[if_obj.index].length);
     console.log(if_obj.variant);
-    console.log(program_obj.variable_inequality[if_obj.index]);
+    console.log(if_obj.variable_inequality[if_obj.index]);
     console.log("done");
-    switch (getRandomInt(1)+1) {
+    switch (getRandomInt(2)) {
         case 0:
             if_obj.program.push(generateSkip());
             break;
@@ -724,266 +754,197 @@ function generateIfPre(program_obj: Program, isGuard:boolean = false): If{
             break;
     }
     if_obj.bool = [];
-    switch (if_obj.variant) {
-        case 0:
-            if_obj.bool = [true];
-            break;
-        case 1:
-            for (let i = 0; i < if_obj.start[if_obj.index].length; i++) {
-                switch (if_obj.variable_inequality[if_obj.index]) {
-                    case 0:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] == if_obj.value));
-                        break;
-                    case 1:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] > if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 2:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] >= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 3:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] < if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 4:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] <= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                
-                    default:
-                        break;
-                }
-            }
-            break;
-        case 2:
-            for (let i = 0; i < if_obj.start[if_obj.index].length; i++) {
-                switch (if_obj.variable_inequality[if_obj.index]) {
-                    case 0:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] > if_obj.value));
-                        break;
-                    case 1:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] > if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 2:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] > if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 3:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] > if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                    case 4:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] > if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                
-                    default:
-                        break;
-                }
-            }
-            break;
-        case 3:
-            for (let i = 0; i < if_obj.start[if_obj.index].length; i++) {
-                switch (if_obj.variable_inequality[if_obj.index]) {
-                    case 0:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] >= if_obj.value));
-                        break;
-                    case 1:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] >= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 2:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] >= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 3:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] >= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                    case 4:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] >= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                
-                    default:
-                        break;
-                }
-            }
-            break;
-        case 4:
-            for (let i = 0; i < if_obj.start[if_obj.index].length; i++) {
-                switch (if_obj.variable_inequality[if_obj.index]) {
-                    case 0:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] < if_obj.value));
-                        break;
-                    case 1:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] < if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 2:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] < if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                    case 3:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] < if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                    case 4:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] < if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                
-                    default:
-                        break;
-                }
-            }
-            break;
-        case 5:
-            for (let i = 0; i < if_obj.start[if_obj.index].length; i++) {
-                switch (if_obj.variable_inequality[if_obj.index]) {
-                    case 0:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] <= if_obj.value));
-                        break;
-                    case 1:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] <= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                    case 2:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] <= if_obj.value));
-                        if(!if_obj.bool[i]){
-                            if_obj.bool.push(true);
-                        }
-                        break;
-                    case 3:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] <= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 4:
-                        if_obj.bool.push((if_obj.start[if_obj.index][i] <= if_obj.value));
-                        if(if_obj.bool[i]){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                
-                    default:
-                        break;
-                }
-            }
-            break;
-        case 6:
-            for (let i = 0; i < if_obj.start[if_obj.index].length; i++) {
-                switch (if_obj.variable_inequality[if_obj.index]) {
-                    case 0:
-                        if_obj.bool.push(!(if_obj.start[if_obj.index][i] == if_obj.value));
-                        break;
-                    case 1:
-                        if_obj.bool.push(true);
-                        if((if_obj.start[if_obj.index][i] > if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 2:
-                        if_obj.bool.push(true);
-                        if((if_obj.start[if_obj.index][i] >= if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 3:
-                        if_obj.bool.push(true);
-                        if((if_obj.start[if_obj.index][i] < if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                    case 4:
-                        if_obj.bool.push(true);
-                        if((if_obj.start[if_obj.index][i] <= if_obj.value)){
-                            if_obj.bool.push(false);
-                        }
-                        break;
-                
-                    default:
-                        break;
-                }
-            }
-            break;
-    
-        default:
-            break;
-    }
-    if (isGuard){
-        for (let i = 0; i < if_obj.bool.length; i++) {
-            if (if_obj.bool[i]){
+    if(program_obj.bool){
+        switch (if_obj.variant) {
+            case 0:
                 if_obj.bool = [true];
-            }
+                break;
+            case 1:
+                for (let i = 0; i < program_obj.start[if_obj.index].length; i++) {
+                    switch (if_obj.variable_inequality[if_obj.index]) {
+                        case 0:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] == if_obj.value));
+                            break;
+                        case 1:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] > if_obj.value));
+                            if_obj.bool.push((-10000 > if_obj.value));
+                            break;
+                        case 2:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push((-10000 >= if_obj.value));
+                            break;
+                        case 3:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] < if_obj.value));
+                            if_obj.bool.push((10000 < if_obj.value));
+                            break;
+                        case 4:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push((10000 <= if_obj.value));
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                break;
+            case 2:
+                for (let i = 0; i < program_obj.start[if_obj.index].length; i++) {
+                    switch (if_obj.variable_inequality[if_obj.index]) {
+                        case 0:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] > if_obj.value));
+                            break;
+                        case 1:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] > if_obj.value));
+                            if_obj.bool.push((-10000 > if_obj.value));
+                            break;
+                        case 2:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] > if_obj.value));
+                            if_obj.bool.push((-10000 > if_obj.value));
+                            break;
+                        case 3:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push((10000 > if_obj.value));
+                            break;
+                        case 4:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] > if_obj.value));
+                            if_obj.bool.push((10000 > if_obj.value));
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                break;
+            case 3:
+                for (let i = 0; i < program_obj.start[if_obj.index].length; i++) {
+                    switch (if_obj.variable_inequality[if_obj.index]) {
+                        case 0:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            break;
+                        case 1:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push((-10000 >= if_obj.value));
+                            break;
+                        case 2:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push((-10000 >= if_obj.value));
+                            break;
+                        case 3:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push((10000 >= if_obj.value));
+                            break;
+                        case 4:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push((10000 >= if_obj.value));
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                break;
+            case 4:
+                for (let i = 0; i < program_obj.start[if_obj.index].length; i++) {
+                    switch (if_obj.variable_inequality[if_obj.index]) {
+                        case 0:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] < if_obj.value));
+                            break;
+                        case 1:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push((-10000 <= if_obj.value));
+                            break;
+                        case 2:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] < if_obj.value));
+                            if_obj.bool.push((-10000 < if_obj.value));
+                            break;
+                        case 3:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] < if_obj.value));
+                            if_obj.bool.push((10000 < if_obj.value));
+                            break;
+                        case 4:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] < if_obj.value));
+                            if_obj.bool.push((10000 < if_obj.value));
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                break;
+            case 5:
+                for (let i = 0; i < program_obj.start[if_obj.index].length; i++) {
+                    switch (if_obj.variable_inequality[if_obj.index]) {
+                        case 0:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            break;
+                        case 1:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push((-10000 <= if_obj.value));
+                            break;
+                        case 2:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push((-10000 <= if_obj.value));
+                            break;
+                        case 3:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push((10000 <= if_obj.value));
+                            break;
+                        case 4:
+                            if_obj.bool.push((program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push((10000 <= if_obj.value));
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                break;
+            case 6:
+                for (let i = 0; i < program_obj.start[if_obj.index].length; i++) {
+                    switch (if_obj.variable_inequality[if_obj.index]) {
+                        case 0:
+                            if_obj.bool.push(!(program_obj.start[if_obj.index][i] == if_obj.value));
+                            break;
+                        case 1:
+                            if_obj.bool.push(!(program_obj.start[if_obj.index][i] > if_obj.value));
+                            if_obj.bool.push(!(-10000 > if_obj.value));
+                            break;
+                        case 2:
+                            if_obj.bool.push(!(program_obj.start[if_obj.index][i] >= if_obj.value));
+                            if_obj.bool.push(!(-10000 >= if_obj.value));
+                            break;
+                        case 3:
+                            if_obj.bool.push(!(program_obj.start[if_obj.index][i] < if_obj.value));
+                            if_obj.bool.push(!(10000 < if_obj.value));
+                            break;
+                        case 4:
+                            if_obj.bool.push(!(program_obj.start[if_obj.index][i] <= if_obj.value));
+                            if_obj.bool.push(!(10000 <= if_obj.value));
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                break;
+        
+            default:
+                break;
         }
     }
-    let start:number[][] = [];
-    for (let i = 0; i < program_obj.end.length; i++) {
-        start.push([]);
-        
+    else{
+        if_obj.bool = [false];
     }
-    for (let i = 0; i < if_obj.bool.length; i++) {
-        if (if_obj.bool[i]) {
-            for (let i = 0; i < if_obj.start.length; i++) {
-                for (let j = 0; j < if_obj.start[i].length; j++) {
-                    start[i].push(if_obj.start[i][j]);
-                }
-                
-            }
-        }   
-        else {
-            for (let i = 0; i < program_obj.end.length; i++) {
-                for (let j = 0; j < program_obj.end[i].length; j++) {
-                    start[i].push(program_obj.end[i][j]);
-                }
-                
-            }
-        }  
+    console.log([...if_obj.bool]);
+    if(if_obj.bool.indexOf(false) > -1){
+        if_obj.can_be_stuck = true;
     }
-    console.log(start);
-    for (let i = 0; i < start.length; i++) {
-        start[i] = [ ...new Set(start[i])];
-        
+    if(program_obj.bool.indexOf(true) > -1 && !isGuard){
+        program_obj.start = if_obj.start;
+        program_obj.variable_inequality = [...if_obj.variable_inequality]
+        program_obj.bool = if_obj.bool;
+        program_obj.can_be_stuck = if_obj.can_be_stuck;
     }
-    program_obj.start = start;
     return if_obj;
 }
 
@@ -1000,22 +961,23 @@ function generateDoPre(program_obj:Program): Do{
         before: [],
         end: [],
         start: [],
-        bool: [],
+        bool: [...program_obj.bool],
         change2: getRandomInt(20)-10,
         variant: 0,
         variant2: getRandomInt(2)+1,
         multiplier: 1,
+        program_variant: 1,
     };
     program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
     do_obj.variable = program_obj.variable;
-    program_obj.variable_inequality[do_obj.index] = 0;
-    do_obj.variable_inequality = program_obj.variable_inequality;
+    program_obj.variable_inequality.push(0);
+    program_obj.starting_variable_inequality.push(0);
+    do_obj.variable_inequality = [...program_obj.variable_inequality];
     program_obj.start.push([do_obj.value2]);
     program_obj.end.push([do_obj.value2]);
-    do_obj.before = [...program_obj.end];
     do_obj.end = program_obj.end;
     do_obj.start = program_obj.start;
-    if(do_obj.value < program_obj.end[do_obj.index][0]){
+    if(do_obj.value < program_obj.start[do_obj.index][0]){
         do_obj.variant = 1;
 
     } else {
@@ -1024,70 +986,85 @@ function generateDoPre(program_obj:Program): Do{
             do_obj.value += 1;
         }
     }
-    do_obj.bool.push(true);
     if(do_obj.variant == 0){
-        do_obj.multiplier = (do_obj.value - program_obj.end[do_obj.index][0]);
+        do_obj.multiplier = (do_obj.value - program_obj.start[do_obj.index][0]);
 
     } else if (do_obj.variant == 1) {
-        do_obj.multiplier = program_obj.end[do_obj.index][0] - do_obj.value;
+        do_obj.multiplier = program_obj.start[do_obj.index][0] - do_obj.value;
     }
     switch (do_obj.variant) {
         case 0:
-            do_obj.program.push(generateAssignPre(do_obj, do_obj.index, do_obj.multiplier, 1, 1));
+            do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 1, 1));
             break;
     
         default:
-            do_obj.program.push(generateAssignPre(do_obj, do_obj.index, do_obj.multiplier, 2, 1));
+            do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 2, 1));
             break;
     }
     do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
     do_obj.end[do_obj.index] = [do_obj.value];
-    program_obj.end = do_obj.end;
+    program_obj.start = [...do_obj.start];
+    do_obj.before = [...program_obj.start];
     return do_obj;
 }
 
 function generateGuardPre(program_obj:Program): Guard{
     var guard_obj: Guard = {
         type: "guard",
-        length: getRandomInt(1)+2,
+        length: getRandomInt(2)+2,
         program: [],
-        end: [],
-        start: [],
-        before: [],
-        bool: false,
+        end: [...program_obj.end],
+        new_value: [],
+        start: [...program_obj.start],
+        before: [...program_obj.start],
+        bool: [false],
+        variable: [...program_obj.variable],
+        variable_inequality: [...program_obj.variable_inequality],
+        can_be_stuck: false,
     }
-    for (let i = 0; i < program_obj.end.length; i++) {
-        guard_obj.end.push([]);
+    for (let i = 0; i < program_obj.start.length; i++) {
+        guard_obj.new_value.push([]);
         
     }
-    guard_obj.before = [...program_obj.end]
+    guard_obj.before = [...program_obj.start]
     for (let i = 0; i < guard_obj.length; i++) {
-        program_obj.end = [...guard_obj.before];
-        guard_obj.program.push(generateIfPre(program_obj, true));
-        for (let j = 0; j < guard_obj.end.length; j++) {
-            for (let k = 0; k < program_obj.end[j].length; k++) {
-                if(guard_obj.program[i].bool){
-                    guard_obj.bool = true;
-                    guard_obj.end[j].push(program_obj.end[j][k]);
-                }
+        guard_obj.start = [...guard_obj.before];
+        guard_obj.program.push(generateIfPre(guard_obj, true));
+        if(program_obj.bool){
+            for (let j = 0; j < guard_obj.start.length; j++) {
+                for (let k = 0; k < program_obj.start[j].length; k++) {
+                    for (let u = 0; u < guard_obj.program[i].bool.length; u++) {
+                        if (guard_obj.program[i].bool[u]){
+                            guard_obj.new_value[j].push(guard_obj.program[i].start[j][k]);
+                            if (!guard_obj.bool[0]) {
+                                guard_obj.bool = [true];
+                            }
+                            if (!guard_obj.program[i].can_be_stuck && guard_obj.can_be_stuck){
+                                guard_obj.can_be_stuck = true;
+                            }
+                        }
+                        else {
+                            guard_obj.can_be_stuck = true;
+                        }
+                    }
+                } 
             }
+        }
+    }
+    if(program_obj.bool.indexOf(true) > -1){
+        for (let i = 0; i < guard_obj.new_value.length; i++) {
+            guard_obj.new_value[i] = [ ...new Set(guard_obj.new_value[i])];
             
         }
-
-        
-        
-    }
-    for (let i = 0; i < guard_obj.end.length; i++) {
-        guard_obj.end[i] = [ ...new Set(guard_obj.end[i])];
-        
-    }
-    if (guard_obj.bool){
-        program_obj.end = guard_obj.end;
+        program_obj.start = guard_obj.new_value;
+        program_obj.variable_inequality = guard_obj.variable_inequality;
+        program_obj.bool = guard_obj.bool;
+        if (!program_obj.can_be_stuck){
+            program_obj.can_be_stuck = guard_obj.can_be_stuck;
+        }
     }
     return guard_obj;
-
 }
-*/
 
 function getRandomInt(max:number): number{
     return Math.floor(Math.random() * max);
@@ -1111,7 +1088,7 @@ function getInequality(inequality:number): string{
     }
 }
 
-function assembleProgram(program_obj:Program): [string, string, string]{
+function assembleProgram(program_obj:Program): [string, string, string, number]{
     let programStr:string = "";
     let programStrEnd:string = "";
     let programStrStart:string = "";
@@ -1162,45 +1139,50 @@ function assembleProgram(program_obj:Program): [string, string, string]{
             programStrEnd += "}\n";
         }
     } else{
-        programStr += "{ ";
-        programStrEnd += "{ ";
-        for (let i = 0; i < program_obj.variable.length; i++) {
-            if (i > 0){
-                programStr += "& ";
-                programStrEnd += "& ";
-            }
-            if (program_obj.start[i].length > 1){
-                programStr += "( "
-            }
-            for (let j = 0; j < program_obj.start[i].length; j++) {
-                if (j > 0) {
-                    programStr += "| ";
+        if(program_obj.bool.indexOf(true) > -1){
+            programStrStart += "{ ";
+            programStrEnd += "{ ";
+            for (let i = 0; i < program_obj.variable.length; i++) {
+                if (i > 0){
+                    programStrStart += "& ";
+                    programStrEnd += "& ";
                 }
-                programStr += program_obj.variable[i] + getInequality(program_obj.starting_variable_inequality[i]) + program_obj.start[i][j] + " ";
+                programStrEnd += program_obj.variable[i] + getInequality(program_obj.starting_variable_inequality[i]) + program_obj.end[i][0] + " ";
+                if (program_obj.start[i].length > 1){
+                    programStrStart += "( "
+                }
+                for (let j = 0; j < program_obj.start[i].length; j++) {
+                    if (j > 0) {
+                        programStrStart += "& ";
+                    }
+                    programStrStart += program_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + program_obj.start[i][j] + " ";
+                    
+                }
+                if (program_obj.start[i].length > 1){
+                    programStrStart += ") "
+                }    
                 
             }
-            if (program_obj.start[i].length > 1){
-                programStr += ") "
-            }  
-            if (program_obj.end[i].length > 1){
-                programStrEnd += "( "
+            if(program_obj.can_be_stuck){
+                programStrStart += "& false ";
             }
-            for (let j = 0; j < program_obj.end[i].length; j++) {
-                if (j > 0) {
-                    programStrEnd += "| ";
-                }
-                programStrEnd += program_obj.variable[i] + getInequality(program_obj.variable_inequality[i]) + program_obj.end[i][j] + " ";
-                
-            }
-            if (program_obj.end[i].length > 1){
-                programStrEnd += ") "
-            }  
-            
+            programStrStart += "}\n";
+            programStrEnd += "}\n";
         }
-        programStr += "}\n";
-        programStrEnd += "}\n";
-        //programStr += "{ x }\n";
-        programStrQueue.push(programStrEnd);
+        else {
+            programStrStart += "{ ";
+            programStrEnd += "{ ";
+            for (let i = 0; i < program_obj.variable.length; i++) {
+                if (i > 0){
+                    programStrEnd += "& ";
+                }
+                programStrEnd += program_obj.variable[i] + getInequality(program_obj.starting_variable_inequality[i]) + program_obj.end[i][0] + " ";
+                
+            }
+            programStrStart += "false ";
+            programStrStart += "}\n";
+            programStrEnd += "}\n";
+        }
     }
     for (let i = 0; i < program_obj.length; i++) {
         switch (program_obj.program[i].type) {
@@ -1232,7 +1214,7 @@ function assembleProgram(program_obj:Program): [string, string, string]{
     while(programStrQueue.length > 0){
         programStr += programStrQueue.pop();
     }
-    return [programStr, programStrEnd, programStrStart];
+    return [programStr, programStrEnd, programStrStart, program_obj.variant];
 }
 
 function assembleSkip(){
@@ -1320,8 +1302,12 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                             doStr += "( "
                         }
                         for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
-                            if ( k > 0) {
-                                doStr += " | ";
+                            if (k > 0) {
+                                if (do_obj.program_variant == 0) {
+                                    doStr += " | ";
+                                } else if (do_obj.program_variant == 1) {
+                                    doStr += " & ";
+                                }
                             }
                             doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][k];
                             if (do_obj.variant2 == 1){
@@ -1341,7 +1327,11 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                         for (let j = 0; j < do_obj.before[i].length; j++) {
                             if (j > 0) {
-                                doStr += " | ";
+                                if (do_obj.program_variant == 0) {
+                                    doStr += " | ";
+                                } else if (do_obj.program_variant == 1) {
+                                    doStr += " & ";
+                                }
                             }
                             doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][j];
                         }
@@ -1350,8 +1340,14 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                     }
                 }
-                for (let i = do_obj.before.length; i < program_obj.start.length; i++){
-                    doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
+                if (do_obj.program_variant == 0){
+                    for (let i = do_obj.before.length; i < program_obj.start.length; i++){
+                        doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
+                    }
+                } else if (do_obj.program_variant == 1){
+                    for (let i = do_obj.before.length; i < program_obj.end.length; i++){
+                        doStr += " & " + program_obj.variable[i] + " = " + program_obj.end[i];
+                    }
                 }
             }
             else {
@@ -1376,7 +1372,11 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                         for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
                             if ( k > 0) {
-                                doStr += " | ";
+                                if (do_obj.program_variant == 0) {
+                                    doStr += " | ";
+                                } else if (do_obj.program_variant == 1) {
+                                    doStr += " & ";
+                                }
                             }
                             doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][k];
                             if (do_obj.variant2 == 1){
@@ -1396,7 +1396,11 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                         for (let j = 0; j < do_obj.before[i].length; j++) {
                             if (j > 0) {
-                                doStr += " | ";
+                                if (do_obj.program_variant == 0) {
+                                    doStr += " | ";
+                                } else if (do_obj.program_variant == 1) {
+                                    doStr += " & ";
+                                }
                             }
                             doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][j];
                         }
@@ -1405,8 +1409,14 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                     }
                 }
-                for (let i = do_obj.before.length; i < program_obj.start.length; i++){
-                    doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
+                if (do_obj.program_variant == 0){
+                    for (let i = do_obj.before.length; i < program_obj.start.length; i++){
+                        doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
+                    }
+                } else if (do_obj.program_variant == 1){
+                    for (let i = do_obj.before.length; i < program_obj.end.length; i++){
+                        doStr += " & " + program_obj.variable[i] + " = " + program_obj.end[i];
+                    }
                 }
             } else {
                 doStr += "false";

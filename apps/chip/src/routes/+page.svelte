@@ -6,34 +6,51 @@
   import Nav from '$lib/components/Nav.svelte';
   import * as Generator from '$lib/generator';
 
-  let program_answer:[string, string, string] = ["","",""];
+  let program_answer:[string, string, string, number] = ["","","", -1];
   let hide_answer = false;
   function getProgram(){
       program_answer = Generator.generateTemplate(selected_option, selected_option2);
-      program = program_answer[2];
-      program += program_answer[0];
-      if (!hide_answer) {
+      if (program_answer[3] == 0) { 
+        program = program_answer[2];
+        program += program_answer[0];
+        if (!hide_answer) {
+          program += program_answer[1];
+        }
+        else {
+          program += "// Write the strongest postcondition below \n{ }";
+        }
+      } else if (program_answer[3] == 1) { 
+        if (!hide_answer) {
+          program = program_answer[2];
+        }
+        else {
+          program = "// Write the weakest precondition below \n{ }\n";
+        }
+        program += program_answer[0];
         program += program_answer[1];
-      }
-      else {
-        program += "// Write the strongest post condition below \n{ }";
       }
       return;
   }
 
   function changeHide(){
-    if(program_answer[0] == ""){
-      return;
-    }
-    if (hide_answer) {
-      program = program_answer[2];
-      program += program_answer[0];
-      program += "// Write the strongest post condition below \n{ }";
-    }
-    else {
-      program = program_answer[2];
-      program += program_answer[0];
-      program += program_answer[1];
+    if (program_answer[3] == 0) {
+      if (hide_answer) {
+        program = program_answer[2];
+        program += program_answer[0];
+        program += "// Write the strongest post condition below \n{ }";
+      }
+      else {
+        program += "\n" + program_answer[1];
+      }
+    } else if (program_answer[3] == 1) {
+      if (hide_answer) {
+        program = "// Write the weakest precondition below \n{ }\n";
+        program += program_answer[0];
+        program += program_answer[1];
+      }
+      else {
+        program = program_answer[2] + program;
+      }
     }
     return;
   }
