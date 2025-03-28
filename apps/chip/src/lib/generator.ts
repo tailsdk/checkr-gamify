@@ -44,7 +44,6 @@ type If = {
     start: number[][];
     variable: string[];
     variable_inequality: number[];
-    guard_bool: boolean[];
     can_be_stuck: boolean;
 }
 
@@ -200,7 +199,7 @@ function generateAssignPost(program_obj:Program | If | Do, index:number = getRan
         assign: assign,
         variable: program_obj.variable,
         end: [...program_obj.end],
-        start: [...program_obj.start],
+        start: [...program_obj.end],
     }
     assign_obj.end[assign_obj.index] = [];
     for (let j = 0; j < program_obj.bool.length; j++) {
@@ -238,18 +237,13 @@ function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false)
         program: [],
         value: getRandomInt(randomValue)-10,
         bool: [],
-        guard_bool: [],
         end: [...program_obj.end],
-        start: [...program_obj.start],
+        start: [...program_obj.end],
         variable: program_obj.variable,
         variable_inequality: [],
         can_be_stuck: program_obj.can_be_stuck,
     }
     if_obj.variable_inequality = [...program_obj.variable_inequality];
-    console.log(program_obj.end[if_obj.index].length);
-    console.log(if_obj.variant);
-    console.log(if_obj.variable_inequality[if_obj.index]);
-    console.log("done");
     if(program_obj.bool){
         switch (if_obj.variant) {
             case 0:
@@ -431,7 +425,6 @@ function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false)
     else{
         if_obj.bool = [false];
     }
-    console.log([...if_obj.bool]);
     if(if_obj.bool.indexOf(false) > -1){
         if_obj.can_be_stuck = true;
     }
@@ -492,8 +485,8 @@ function generateDoPost(program_obj:Program): Do{
     program_obj.start.push([do_obj.value2]);
     program_obj.end.push([do_obj.value2]);
     do_obj.before = [...program_obj.end];
-    do_obj.end = program_obj.end;
-    do_obj.start = program_obj.start;
+    do_obj.end = [...program_obj.end];
+    do_obj.start = [...program_obj.end];
     if(do_obj.value < program_obj.end[do_obj.index][0]){
         do_obj.variant = 1;
 
@@ -531,7 +524,7 @@ function generateGuardPost(program_obj:Program): Guard{
         program: [],
         end: [...program_obj.end],
         new_value: [],
-        start: [],
+        start: [...program_obj.end],
         before: [...program_obj.end],
         bool: [false],
         variable: [...program_obj.variable],
@@ -641,7 +634,7 @@ function generateAssignPre(program_obj:Program | If | Do, index:number = getRand
         index: index,
         assign: assign,
         variable: program_obj.variable,
-        end: [...program_obj.end],
+        end: [...program_obj.start],
         start: [...program_obj.start],
     }
     assign_obj.start[assign_obj.index] = [];
@@ -676,18 +669,13 @@ function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false):
         program: [],
         value: getRandomInt(randomValue)-10,
         bool: [true],
-        guard_bool: [],
-        end: [...program_obj.end],
+        end: [...program_obj.start],
         start: [...program_obj.start],
         variable: program_obj.variable,
         variable_inequality: [],
         can_be_stuck: program_obj.can_be_stuck,
     }
     if_obj.variable_inequality = [...program_obj.variable_inequality];
-    console.log(program_obj.end[if_obj.index].length);
-    console.log(if_obj.variant);
-    console.log(if_obj.variable_inequality[if_obj.index]);
-    console.log("done");
     switch (getRandomInt(2)) {
         case 0:
             if_obj.program.push(generateSkip(if_obj));
@@ -881,7 +869,6 @@ function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false):
     else{
         if_obj.bool = [false];
     }
-    console.log([...if_obj.bool]);
     if(if_obj.bool.indexOf(false) > -1){
         if_obj.can_be_stuck = true;
     }
@@ -925,8 +912,8 @@ function generateDoPre(program_obj:Program): Do{
     do_obj.variable_inequality = [...program_obj.variable_inequality];
     program_obj.start.push([do_obj.value2]);
     program_obj.end.push([do_obj.value2]);
-    do_obj.end = program_obj.end;
-    do_obj.start = program_obj.start;
+    do_obj.end = [...program_obj.start];
+    do_obj.start = [...program_obj.start];
     if(do_obj.value < program_obj.start[do_obj.index][0]){
         do_obj.variant = 1;
 
@@ -952,6 +939,7 @@ function generateDoPre(program_obj:Program): Do{
             break;
     }
     do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
+    program_obj.end[do_obj.index] = [do_obj.value];
     do_obj.end[do_obj.index] = [do_obj.value];
     program_obj.start = [...do_obj.start];
     do_obj.before = [...program_obj.start];
@@ -1001,13 +989,11 @@ function generateGuardPre(program_obj:Program): Guard{
             }
         }
     }
-    console.log([...guard_obj.new_value]);
     if(program_obj.bool.indexOf(true) > -1){
         for (let i = 0; i < guard_obj.new_value.length; i++) {
             guard_obj.new_value[i] = [ ...new Set(guard_obj.new_value[i])];
             
         }
-        console.log([...guard_obj.new_value]);
         program_obj.start = [...guard_obj.new_value];
         program_obj.variable_inequality = guard_obj.variable_inequality;
         program_obj.bool = guard_obj.bool;
