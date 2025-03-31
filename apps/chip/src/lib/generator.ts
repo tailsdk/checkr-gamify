@@ -460,8 +460,8 @@ function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false)
 function generateDoPost(program_obj:Program): Do{
     var do_obj: Do = {
         type: "do",
-        value:  getRandomInt(20)-10,
-        value2:  getRandomInt(20)-10,
+        value: 0,
+        value2: 0,
         index2: getRandomInt(program_obj.variable.length),
         index: program_obj.variable.length,
         variable: [],
@@ -472,47 +472,50 @@ function generateDoPost(program_obj:Program): Do{
         start: [],
         bool: [...program_obj.bool],
         change2: getRandomInt(20)-10,
-        variant: 0,
+        variant: getRandomInt(2),
         variant2: getRandomInt(2)+1,
         multiplier: 1,
-        program_variant: 0,
+        program_variant: program_obj.variant,
     };
-    program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
-    do_obj.variable = program_obj.variable;
-    program_obj.variable_inequality.push(0);
-    program_obj.starting_variable_inequality.push(0);
-    do_obj.variable_inequality = [...program_obj.variable_inequality];
-    program_obj.start.push([do_obj.value2]);
-    program_obj.end.push([do_obj.value2]);
-    do_obj.before = [...program_obj.end];
-    do_obj.end = [...program_obj.end];
-    do_obj.start = [...program_obj.end];
-    if(do_obj.value < program_obj.end[do_obj.index][0]){
-        do_obj.variant = 1;
-
-    } else {
-        do_obj.variant = 0;
-        if (do_obj.value == 0){
-            do_obj.value += 1;
-        }
-    }
-    if(do_obj.variant == 0){
-        do_obj.multiplier = (do_obj.value - program_obj.end[do_obj.index][0]);
-
-    } else if (do_obj.variant == 1) {
-        do_obj.multiplier = program_obj.end[do_obj.index][0] - do_obj.value;
-    }
     switch (do_obj.variant) {
         case 0:
+            program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
+            do_obj.variable = program_obj.variable;
+            program_obj.variable_inequality.push(0);
+            program_obj.starting_variable_inequality.push(0);
+            do_obj.variable_inequality = [...program_obj.variable_inequality];
+            do_obj.value = getRandomInt(20) - 10;
+            do_obj.value2 = -getRandomInt(9) + do_obj.value - 1; 
+            program_obj.start.push([do_obj.value2]);
+            program_obj.end.push([do_obj.value2]);
+            do_obj.before = [...program_obj.end];
+            do_obj.end = [...program_obj.end];
+            do_obj.start = [...program_obj.end];
+            do_obj.multiplier = (do_obj.value - do_obj.value2);
             do_obj.program.push(generateAssignPost(do_obj, do_obj.index, do_obj.multiplier, 1, 1));
+            do_obj.program.push(generateAssignPost(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
+            do_obj.end[do_obj.index] = [do_obj.value];
             break;
     
         default:
+            program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
+            do_obj.variable = program_obj.variable;
+            program_obj.variable_inequality.push(0);
+            program_obj.starting_variable_inequality.push(0);
+            do_obj.variable_inequality = [...program_obj.variable_inequality];
+            do_obj.value = getRandomInt(20) - 10; 
+            do_obj.value2 = getRandomInt(9) + do_obj.value + 1;
+            program_obj.start.push([do_obj.value2]);
+            program_obj.end.push([do_obj.value2]);
+            do_obj.before = [...program_obj.end];
+            do_obj.end = [...program_obj.end];
+            do_obj.start = [...program_obj.end];
+            do_obj.multiplier = do_obj.value2 - do_obj.value;
             do_obj.program.push(generateAssignPost(do_obj, do_obj.index, do_obj.multiplier, 2, 1));
+            do_obj.program.push(generateAssignPost(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
+            do_obj.end[do_obj.index] = [do_obj.value];
             break;
     }
-    do_obj.program.push(generateAssignPost(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
-    do_obj.end[do_obj.index] = [do_obj.value];
     program_obj.end = do_obj.end;
     return do_obj;
 }
@@ -888,8 +891,8 @@ function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false):
 function generateDoPre(program_obj:Program): Do{
     var do_obj: Do = {
         type: "do",
-        value:  getRandomInt(20)-10,
-        value2:  getRandomInt(20)-10,
+        value:  0,
+        value2:  0,
         index2: getRandomInt(program_obj.variable.length),
         index: program_obj.variable.length,
         variable: [],
@@ -900,47 +903,52 @@ function generateDoPre(program_obj:Program): Do{
         start: [],
         bool: [...program_obj.bool],
         change2: getRandomInt(20)-10,
-        variant: 0,
+        variant: getRandomInt(2),
         variant2: getRandomInt(2)+1,
         multiplier: 1,
-        program_variant: 1,
+        program_variant: program_obj.variant,
     };
-    program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
-    do_obj.variable = program_obj.variable;
-    program_obj.variable_inequality.push(0);
-    program_obj.starting_variable_inequality.push(0);
-    do_obj.variable_inequality = [...program_obj.variable_inequality];
-    program_obj.start.push([do_obj.value2]);
-    program_obj.end.push([do_obj.value2]);
-    do_obj.end = [...program_obj.start];
-    do_obj.start = [...program_obj.start];
-    if(do_obj.value < program_obj.start[do_obj.index][0]){
-        do_obj.variant = 1;
-
-    } else {
-        do_obj.variant = 0;
-        if (do_obj.value == 0){
-            do_obj.value += 1;
-        }
-    }
-    if(do_obj.variant == 0){
-        do_obj.multiplier = (do_obj.value - program_obj.start[do_obj.index][0]);
-
-    } else if (do_obj.variant == 1) {
-        do_obj.multiplier = program_obj.start[do_obj.index][0] - do_obj.value;
-    }
     switch (do_obj.variant) {
         case 0:
+            program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
+            do_obj.variable = program_obj.variable;
+            program_obj.variable_inequality.push(0);
+            program_obj.starting_variable_inequality.push(0);
+            do_obj.variable_inequality = [...program_obj.variable_inequality];
+            do_obj.value = getRandomInt(20) - 10;
+            do_obj.value2 = -getRandomInt(9) + do_obj.value - 1; 
+            program_obj.start.push([do_obj.value2]);
+            program_obj.end.push([do_obj.value2]);
+            do_obj.end = [...program_obj.start];
+            do_obj.start = [...program_obj.start];
+            do_obj.multiplier = (do_obj.value - do_obj.value2);
             do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 1, 1));
+            do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
+            program_obj.end[do_obj.index] = [do_obj.value];
+            do_obj.end[do_obj.index] = [do_obj.value];
+            break;
+        case 1:
+            program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
+            do_obj.variable = program_obj.variable;
+            program_obj.variable_inequality.push(0);
+            program_obj.starting_variable_inequality.push(0);
+            do_obj.variable_inequality = [...program_obj.variable_inequality];
+            do_obj.value = getRandomInt(20) - 10; 
+            do_obj.value2 = getRandomInt(9) + do_obj.value + 1;
+            program_obj.start.push([do_obj.value2]);
+            program_obj.end.push([do_obj.value2]);
+            do_obj.end = [...program_obj.start];
+            do_obj.start = [...program_obj.start];
+            do_obj.multiplier = do_obj.value2 - do_obj.value;
+            do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 2, 1));
+            do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
+            program_obj.end[do_obj.index] = [do_obj.value];
+            do_obj.end[do_obj.index] = [do_obj.value];
             break;
     
         default:
-            do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 2, 1));
             break;
     }
-    do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
-    program_obj.end[do_obj.index] = [do_obj.value];
-    do_obj.end[do_obj.index] = [do_obj.value];
     program_obj.start = [...do_obj.start];
     do_obj.before = [...program_obj.start];
     return do_obj;
