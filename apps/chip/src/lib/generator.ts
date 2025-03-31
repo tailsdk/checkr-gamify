@@ -56,7 +56,6 @@ type Do = {
     variable: string[];
     variable_inequality: number[];
     program: (Skip|Assign|If|Do)[];
-    before: number[][];
     end: number[][];
     start: number[][];
     bool: boolean[];
@@ -467,7 +466,6 @@ function generateDoPost(program_obj:Program): Do{
         variable: [],
         variable_inequality: [],
         program: [],
-        before: [],
         end: [],
         start: [],
         bool: [...program_obj.bool],
@@ -488,7 +486,6 @@ function generateDoPost(program_obj:Program): Do{
             do_obj.value2 = -getRandomInt(9) + do_obj.value - 1; 
             program_obj.start.push([do_obj.value2]);
             program_obj.end.push([do_obj.value2]);
-            do_obj.before = [...program_obj.end];
             do_obj.end = [...program_obj.end];
             do_obj.start = [...program_obj.end];
             do_obj.multiplier = (do_obj.value - do_obj.value2);
@@ -507,7 +504,6 @@ function generateDoPost(program_obj:Program): Do{
             do_obj.value2 = getRandomInt(9) + do_obj.value + 1;
             program_obj.start.push([do_obj.value2]);
             program_obj.end.push([do_obj.value2]);
-            do_obj.before = [...program_obj.end];
             do_obj.end = [...program_obj.end];
             do_obj.start = [...program_obj.end];
             do_obj.multiplier = do_obj.value2 - do_obj.value;
@@ -898,7 +894,6 @@ function generateDoPre(program_obj:Program): Do{
         variable: [],
         variable_inequality: [],
         program: [],
-        before: [],
         end: [],
         start: [],
         bool: [...program_obj.bool],
@@ -950,7 +945,6 @@ function generateDoPre(program_obj:Program): Do{
             break;
     }
     program_obj.start = [...do_obj.start];
-    do_obj.before = [...program_obj.start];
     return do_obj;
 }
 
@@ -1236,7 +1230,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
         case 0:
             doStr += "[ "
             if (do_obj.bool[0]){
-                for (let i = 0; i < do_obj.before.length; i++) {
+                for (let i = 0; i < do_obj.start.length; i++) {
                     if (i > 0){
                         doStr += " & ";
                     }
@@ -1244,10 +1238,10 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         doStr += do_obj.value + " >= " + do_obj.variable[i];
                     }
                     else if( i == do_obj.index2){
-                        if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += "( "
                         }
-                        for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
+                        for (let k = 0; k < do_obj.start[do_obj.index2].length; k++) {
                             if (k > 0) {
                                 if (do_obj.program_variant == 0) {
                                     doStr += " | ";
@@ -1255,23 +1249,23 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                                     doStr += " & ";
                                 }
                             }
-                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][k];
+                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.start[i][k];
                             if (do_obj.variant2 == 1){
                                 doStr += " + ";
                             } else {
                                 doStr += " - ";
                             }
-                            doStr += do_obj.change2 + " * (" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + ")";
+                            doStr += do_obj.change2 + " * (" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.start[do_obj.index][0]) + ")";
                         }
                             
-                        if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += ")"
                         }
                     } else {
-                        if (do_obj.before[i].length > 1){
+                        if (do_obj.start[i].length > 1){
                             doStr += "( "
                         }
-                        for (let j = 0; j < do_obj.before[i].length; j++) {
+                        for (let j = 0; j < do_obj.start[i].length; j++) {
                             if (j > 0) {
                                 if (do_obj.program_variant == 0) {
                                     doStr += " | ";
@@ -1279,19 +1273,19 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                                     doStr += " & ";
                                 }
                             }
-                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][j];
+                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.start[i][j];
                         }
-                        if (do_obj.before[i].length > 1){
+                        if (do_obj.start[i].length > 1){
                             doStr += " )";
                         }
                     }
                 }
                 if (do_obj.program_variant == 0){
-                    for (let i = do_obj.before.length; i < program_obj.start.length; i++){
+                    for (let i = do_obj.start.length; i < program_obj.start.length; i++){
                         doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
                     }
                 } else if (do_obj.program_variant == 1){
-                    for (let i = do_obj.before.length; i < program_obj.end.length; i++){
+                    for (let i = do_obj.start.length; i < program_obj.end.length; i++){
                         doStr += " & " + program_obj.variable[i] + " = " + program_obj.end[i];
                     }
                 }
@@ -1305,7 +1299,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
         case 1:
             doStr += "[ "
             if (do_obj.bool[0]){
-                for (let i = 0; i < do_obj.before.length; i++) {
+                for (let i = 0; i < do_obj.start.length; i++) {
                     if ( i > 0){
                         doStr += " & ";
                     }
@@ -1313,10 +1307,10 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         doStr += do_obj.value + " <= " + do_obj.variable[i];
                     }
                     else if( i == do_obj.index2){
-                        if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += "( "
                         }
-                        for (let k = 0; k < do_obj.before[do_obj.index2].length; k++) {
+                        for (let k = 0; k < do_obj.start[do_obj.index2].length; k++) {
                             if ( k > 0) {
                                 if (do_obj.program_variant == 0) {
                                     doStr += " | ";
@@ -1324,23 +1318,23 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                                     doStr += " & ";
                                 }
                             }
-                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][k];
+                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.start[i][k];
                             if (do_obj.variant2 == 1){
                                 doStr += " + ";
                             } else {
                                 doStr += " - ";
                             }
-                            doStr += do_obj.change2 + " * (-(" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.before[do_obj.index][0]) + "))";
+                            doStr += do_obj.change2 + " * (-(" + do_obj.variable[do_obj.index] + " + " + (0-do_obj.start[do_obj.index][0]) + "))";
                         }
                             
-                        if (do_obj.before[i].length > 1 || do_obj.before[do_obj.index2].length > 1){
+                        if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += ")";
                         }
                     } else {
-                        if (do_obj.before[i].length > 1){
+                        if (do_obj.start[i].length > 1){
                             doStr += "( "
                         }
-                        for (let j = 0; j < do_obj.before[i].length; j++) {
+                        for (let j = 0; j < do_obj.start[i].length; j++) {
                             if (j > 0) {
                                 if (do_obj.program_variant == 0) {
                                     doStr += " | ";
@@ -1348,19 +1342,19 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                                     doStr += " & ";
                                 }
                             }
-                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.before[i][j];
+                            doStr += do_obj.variable[i] + getInequality(do_obj.variable_inequality[i]) + do_obj.start[i][j];
                         }
-                        if (do_obj.before[i].length > 1){
+                        if (do_obj.start[i].length > 1){
                             doStr += " )"
                         }
                     }
                 }
                 if (do_obj.program_variant == 0){
-                    for (let i = do_obj.before.length; i < program_obj.start.length; i++){
+                    for (let i = do_obj.start.length; i < program_obj.start.length; i++){
                         doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
                     }
                 } else if (do_obj.program_variant == 1){
-                    for (let i = do_obj.before.length; i < program_obj.end.length; i++){
+                    for (let i = do_obj.start.length; i < program_obj.end.length; i++){
                         doStr += " & " + program_obj.variable[i] + " = " + program_obj.end[i];
                     }
                 }
