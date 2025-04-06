@@ -72,8 +72,6 @@ type Guard = {
     program: (If)[];
     start: number[][];
     end: number[][];
-    new_value: number[][];
-    before: number[][];
     bool: boolean[];
     variable: string[];
     variable_inequality: number[];
@@ -146,6 +144,7 @@ function generateProgramPost(inequality:number, predefinedProgram:number[]): [st
         start_variables: getRandomInt(2)+1,
         can_be_stuck: false,
     };
+    //initilalize variables
     for (let i = 0; i < program_obj.start_variables; i++) {
         program_obj.variable.push(String.fromCharCode(97+i));
         program_obj.starting_variable_inequality.push(getRandomInt(inequality));
@@ -153,7 +152,7 @@ function generateProgramPost(inequality:number, predefinedProgram:number[]): [st
         program_obj.variable_inequality.push(program_obj.starting_variable_inequality[i]);
         program_obj.end.push(program_obj.start[i])
     }
-
+    //generate commands
     for (let i = 0; i < program_obj.program_template.length; i++) {
         switch (program_obj.program_template[i]) {
             case 0:
@@ -201,6 +200,7 @@ function generateAssignPost(program_obj:Program | If | Do, index:number = getRan
         start: [...program_obj.end],
     }
     assign_obj.end[assign_obj.index] = [];
+    //loop checks through the bool of the parent object and only applies the value if the value is true
     for (let j = 0; j < program_obj.bool.length; j++) {
         if(program_obj.bool[j]){
             switch (assign_obj.variant) {
@@ -223,6 +223,7 @@ function generateAssignPost(program_obj:Program | If | Do, index:number = getRan
             }
         }
     }
+    //removes extra copies of the same values and applies the new end value to the parent object
     assign_obj.end[assign_obj.index] = [ ...new Set(assign_obj.end[assign_obj.index])]
     program_obj.end[assign_obj.index] = assign_obj.end[assign_obj.index];
     return assign_obj;
@@ -243,6 +244,7 @@ function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false)
         can_be_stuck: program_obj.can_be_stuck,
     }
     if_obj.variable_inequality = [...program_obj.variable_inequality];
+    //if statement that decides the bool variables for each variation with respect to inequalities and applies false if the parent bool is set to false
     if(program_obj.bool){
         switch (if_obj.variant) {
             case 0:
@@ -424,9 +426,11 @@ function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false)
     else{
         if_obj.bool = [false];
     }
+    //checks if any scenerios made it possible to get stuck
     if(if_obj.bool.indexOf(false) > -1){
         if_obj.can_be_stuck = true;
     }
+    //adds commands within the if command
     switch (getRandomInt(2)) {
         case 0:
             if_obj.program.push(generateSkip(if_obj));
@@ -443,6 +447,7 @@ function generateIfPost(program_obj: (Program | Guard), isGuard:boolean = false)
         default:
             break;
     }
+    //applies the values of the if statement if the bool value is true and it is not within a guard command
     if(program_obj.bool.indexOf(true) > -1 && !isGuard){
         program_obj.end = if_obj.end;
         program_obj.variable_inequality = [...if_obj.variable_inequality]
@@ -477,6 +482,7 @@ function generateDoPost(program_obj:Program): Do{
     };
     switch (do_obj.variant) {
         case 0:
+            //initialize new variable
             program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
             do_obj.variable = program_obj.variable;
             program_obj.variable_inequality.push(0);
@@ -485,16 +491,18 @@ function generateDoPost(program_obj:Program): Do{
             do_obj.value = getRandomInt(20) - 10;
             do_obj.value2 = -getRandomInt(9) + do_obj.value - 1; 
             program_obj.start.push([do_obj.value2]);
-            program_obj.end.push([do_obj.value2]);
+            program_obj.end.push([do_obj.value2]); 
             do_obj.end = [...program_obj.end];
             do_obj.start = [...program_obj.end];
             do_obj.multiplier = (do_obj.value - do_obj.value2);
+            //add commands
             do_obj.program.push(generateAssignPost(do_obj, do_obj.index, do_obj.multiplier, 1, 1));
             do_obj.program.push(generateAssignPost(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
             do_obj.end[do_obj.index] = [do_obj.value];
             break;
     
-        default:
+        case 1:
+            //initialize new variable
             program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
             do_obj.variable = program_obj.variable;
             program_obj.variable_inequality.push(0);
@@ -507,11 +515,15 @@ function generateDoPost(program_obj:Program): Do{
             do_obj.end = [...program_obj.end];
             do_obj.start = [...program_obj.end];
             do_obj.multiplier = do_obj.value2 - do_obj.value;
+            //add commands
             do_obj.program.push(generateAssignPost(do_obj, do_obj.index, do_obj.multiplier, 2, 1));
             do_obj.program.push(generateAssignPost(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
             do_obj.end[do_obj.index] = [do_obj.value];
             break;
+        default:
+            break;
     }
+    //save new value
     program_obj.end = do_obj.end;
     return do_obj;
 }
@@ -522,28 +534,30 @@ function generateGuardPost(program_obj:Program): Guard{
         length: getRandomInt(2)+2,
         program: [],
         end: [...program_obj.end],
-        new_value: [],
         start: [...program_obj.end],
-        before: [...program_obj.end],
         bool: [false],
         variable: [...program_obj.variable],
         variable_inequality: [...program_obj.variable_inequality],
         can_be_stuck: false,
     }
+    //create a temporary variable to combine the end of all if statements
+    let new_value:number[][] = [];
     for (let i = 0; i < program_obj.end.length; i++) {
-        guard_obj.new_value.push([]);
+        new_value.push([]);
         
     }
-    guard_obj.before = [...program_obj.end]
     for (let i = 0; i < guard_obj.length; i++) {
-        guard_obj.end = [...guard_obj.before];
+        //reset the end object
+        guard_obj.end = [...guard_obj.start];
+        //add command
         guard_obj.program.push(generateIfPost(guard_obj, true));
+        //if the parent object bool is true add the values from the if statement to the temp value and check for truth values
         if(program_obj.bool){
             for (let j = 0; j < guard_obj.end.length; j++) {
                 for (let k = 0; k < program_obj.end[j].length; k++) {
                     for (let u = 0; u < guard_obj.program[i].bool.length; u++) {
                         if (guard_obj.program[i].bool[u]){
-                            guard_obj.new_value[j].push(guard_obj.program[i].end[j][k]);
+                            new_value[j].push(guard_obj.program[i].end[j][k]);
                             if (!guard_obj.bool[0]) {
                                 guard_obj.bool = [true];
                             }
@@ -559,12 +573,13 @@ function generateGuardPost(program_obj:Program): Guard{
             }
         }
     }
+    //if the parent opbjects truth value is true then update it
     if(program_obj.bool.indexOf(true) > -1){
-        for (let i = 0; i < guard_obj.new_value.length; i++) {
-            guard_obj.new_value[i] = [ ...new Set(guard_obj.new_value[i])];
+        for (let i = 0; i < new_value.length; i++) {
+            new_value[i] = [ ...new Set(new_value[i])];
             
         }
-        program_obj.end = [...guard_obj.new_value];
+        program_obj.end = [...new_value];
         program_obj.variable_inequality = guard_obj.variable_inequality;
         program_obj.bool = guard_obj.bool;
         if (!program_obj.can_be_stuck){
@@ -591,6 +606,7 @@ function generateProgramPre(inequality:number, predefinedProgram:number[]): [str
         start_variables: getRandomInt(2)+1,
         can_be_stuck: false,
     };
+    //initialize variables
     for (let i = 0; i < program_obj.start_variables; i++) {
         program_obj.variable.push(String.fromCharCode(97+i));
         program_obj.starting_variable_inequality.push(getRandomInt(inequality));
@@ -598,7 +614,7 @@ function generateProgramPre(inequality:number, predefinedProgram:number[]): [str
         program_obj.variable_inequality.push(program_obj.starting_variable_inequality[i]);
         program_obj.end.push(program_obj.start[i])
     }
-
+    //add commands
     for (let i = program_obj.length-1; i >= 0; i--) {
         switch (program_obj.program_template[i]) {
             case 0:
@@ -636,7 +652,8 @@ function generateAssignPre(program_obj:Program | If | Do, index:number = getRand
         end: [...program_obj.start],
         start: [...program_obj.start],
     }
-    assign_obj.start[assign_obj.index] = [];
+    assign_obj.start[assign_obj.index] = []; 
+    //loop checks through the bool of the parent object and only applies the value if the value is true
     for (let j = 0; j < program_obj.bool.length; j++) {
         if(program_obj.bool[j]){
             switch (assign_obj.variant) {
@@ -655,6 +672,7 @@ function generateAssignPre(program_obj:Program | If | Do, index:number = getRand
             }
         }
     }
+    //removes extra copies of the same values and applies the new end value to the parent object
     assign_obj.start[assign_obj.index] = [ ...new Set(assign_obj.start[assign_obj.index])]
     program_obj.start[assign_obj.index] = assign_obj.start[assign_obj.index];
     return assign_obj;
@@ -671,10 +689,10 @@ function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false):
         end: [...program_obj.start],
         start: [...program_obj.start],
         variable: program_obj.variable,
-        variable_inequality: [],
+        variable_inequality: [...program_obj.variable_inequality],
         can_be_stuck: program_obj.can_be_stuck,
     }
-    if_obj.variable_inequality = [...program_obj.variable_inequality];
+    //add commands
     switch (getRandomInt(2)) {
         case 0:
             if_obj.program.push(generateSkip(if_obj));
@@ -687,6 +705,7 @@ function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false):
             break;
     }
     if_obj.bool = [];
+    //if statement that decides the bool variables for each variation with respect to inequalities and applies false if the parent bool is set to false
     if(program_obj.bool){
         switch (if_obj.variant) {
             case 0:
@@ -868,9 +887,11 @@ function generateIfPre(program_obj: (Program | Guard), isGuard:boolean = false):
     else{
         if_obj.bool = [false];
     }
+    //checks if any scenerios made it possible to get stuck
     if(if_obj.bool.indexOf(false) > -1){
         if_obj.can_be_stuck = true;
     }
+    //applies the values of the if statement if the bool value is true and it is not within a guard command
     if(program_obj.bool.indexOf(true) > -1 && !isGuard){
         program_obj.start = if_obj.start;
         program_obj.variable_inequality = [...if_obj.variable_inequality]
@@ -905,6 +926,7 @@ function generateDoPre(program_obj:Program): Do{
     };
     switch (do_obj.variant) {
         case 0:
+            //initialize new variable
             program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
             do_obj.variable = program_obj.variable;
             program_obj.variable_inequality.push(0);
@@ -917,12 +939,14 @@ function generateDoPre(program_obj:Program): Do{
             do_obj.end = [...program_obj.start];
             do_obj.start = [...program_obj.start];
             do_obj.multiplier = (do_obj.value - do_obj.value2);
+            //add commands
             do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 1, 1));
             do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
             program_obj.end[do_obj.index] = [do_obj.value];
             do_obj.end[do_obj.index] = [do_obj.value];
             break;
         case 1:
+            //initialize new variable
             program_obj.variable.push(String.fromCharCode(97+program_obj.variable.length));
             do_obj.variable = program_obj.variable;
             program_obj.variable_inequality.push(0);
@@ -935,6 +959,7 @@ function generateDoPre(program_obj:Program): Do{
             do_obj.end = [...program_obj.start];
             do_obj.start = [...program_obj.start];
             do_obj.multiplier = do_obj.value2 - do_obj.value;
+            //add commands
             do_obj.program.push(generateAssignPre(do_obj, do_obj.index, 0, 2, 1));
             do_obj.program.push(generateAssignPre(do_obj, do_obj.index2, do_obj.multiplier, do_obj.variant2, do_obj.change2));
             program_obj.end[do_obj.index] = [do_obj.value];
@@ -944,6 +969,7 @@ function generateDoPre(program_obj:Program): Do{
         default:
             break;
     }
+    //save new value
     program_obj.start = [...do_obj.start];
     return do_obj;
 }
@@ -953,29 +979,31 @@ function generateGuardPre(program_obj:Program): Guard{
         type: "guard",
         length: getRandomInt(2)+2,
         program: [],
-        end: [...program_obj.end],
-        new_value: [],
+        end: [...program_obj.start],
         start: [...program_obj.start],
-        before: [...program_obj.start],
         bool: [false],
         variable: [...program_obj.variable],
         variable_inequality: [...program_obj.variable_inequality],
         can_be_stuck: false,
     }
+    //create a temporary variable to combine the end of all if statements
+    let new_value:number[][] = [];
     for (let i = 0; i < program_obj.start.length; i++) {
-        guard_obj.new_value.push([]);
+        new_value.push([]);
         
     }
-    guard_obj.before = [...program_obj.start]
     for (let i = 0; i < guard_obj.length; i++) {
-        guard_obj.start = [...guard_obj.before];
+        //reset the end object
+        guard_obj.start = [...guard_obj.end];
+        //add command
         guard_obj.program.push(generateIfPre(guard_obj, true));
+        //if the parent object bool is true add the values from the if statement to the temp value and check for truth values
         if(program_obj.bool){
             for (let j = 0; j < guard_obj.start.length; j++) {
                 for (let k = 0; k < program_obj.start[j].length; k++) {
                     for (let u = 0; u < guard_obj.program[i].bool.length; u++) {
                         if (guard_obj.program[i].bool[u]){
-                            guard_obj.new_value[j].push(guard_obj.program[i].start[j][k]);
+                            new_value[j].push(guard_obj.program[i].start[j][k]);
                             if (!guard_obj.bool[0]) {
                                 guard_obj.bool = [true];
                             }
@@ -991,12 +1019,13 @@ function generateGuardPre(program_obj:Program): Guard{
             }
         }
     }
+    //if the parent opbjects truth value is true then update it
     if(program_obj.bool.indexOf(true) > -1){
-        for (let i = 0; i < guard_obj.new_value.length; i++) {
-            guard_obj.new_value[i] = [ ...new Set(guard_obj.new_value[i])];
+        for (let i = 0; i < new_value.length; i++) {
+            new_value[i] = [ ...new Set(new_value[i])];
             
         }
-        program_obj.start = [...guard_obj.new_value];
+        program_obj.start = [...new_value];
         program_obj.variable_inequality = guard_obj.variable_inequality;
         program_obj.bool = guard_obj.bool;
         if (!program_obj.can_be_stuck){
@@ -1006,10 +1035,12 @@ function generateGuardPre(program_obj:Program): Guard{
     return guard_obj;
 }
 
+//gets a random integer within a range
 function getRandomInt(max:number): number{
     return Math.floor(Math.random() * max);
 }
 
+//returns the inequality as a string
 function getInequality(inequality:number): string{
     switch (inequality) {
         case 0:
@@ -1032,8 +1063,9 @@ function assembleProgram(program_obj:Program): [string, string, string, number]{
     let programStr:string = "";
     let programStrEnd:string = "";
     let programStrStart:string = "";
-    let programStrQueue:string[] = [];
+    //make the postcondition and precondition
     if (program_obj.variant == 0){
+        //check if the program can complete
         if(program_obj.bool.indexOf(true) > -1){
             programStrStart += "{ ";
             programStrEnd += "{ ";
@@ -1058,6 +1090,7 @@ function assembleProgram(program_obj:Program): [string, string, string, number]{
                 }    
                 
             }
+            //if the program can get stuck add | false
             if(program_obj.can_be_stuck){
                 programStrEnd += "| false ";
             }
@@ -1079,6 +1112,7 @@ function assembleProgram(program_obj:Program): [string, string, string, number]{
             programStrEnd += "}\n";
         }
     } else{
+        //check if the program can complete
         if(program_obj.bool.indexOf(true) > -1){
             programStrStart += "{ ";
             programStrEnd += "{ ";
@@ -1103,6 +1137,7 @@ function assembleProgram(program_obj:Program): [string, string, string, number]{
                 }    
                 
             }
+            //if the program can get stuck add & false
             if(program_obj.can_be_stuck){
                 programStrStart += "& false ";
             }
@@ -1124,6 +1159,7 @@ function assembleProgram(program_obj:Program): [string, string, string, number]{
             programStrEnd += "}\n";
         }
     }
+    //generate text for the commands in order
     for (let i = 0; i < program_obj.length; i++) {
         switch (program_obj.program[i].type) {
             case "skip":
@@ -1150,9 +1186,6 @@ function assembleProgram(program_obj:Program): [string, string, string, number]{
         else{
             programStr += "\n";
         }
-    }
-    while(programStrQueue.length > 0){
-        programStr += programStrQueue.pop();
     }
     return [programStr, programStrEnd, programStrStart, program_obj.variant];
 }
@@ -1227,16 +1260,21 @@ function assembleIf(if_obj:If, isGuard:boolean): string{
 function assembleDo(do_obj:Do, program_obj:Program): string{
     let doStr:string = "do";
     switch (do_obj.variant) {
+        //make the invariant
         case 0:
             doStr += "[ "
+            //check if the bool value is true
             if (do_obj.bool[0]){
                 for (let i = 0; i < do_obj.start.length; i++) {
+                    //add & between variables
                     if (i > 0){
                         doStr += " & ";
                     }
+                    //the counter variable
                     if (i == do_obj.index){
                         doStr += do_obj.value + " >= " + do_obj.variable[i];
                     }
+                    //the variable that changes
                     else if( i == do_obj.index2){
                         if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += "( "
@@ -1261,7 +1299,9 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += ")"
                         }
-                    } else {
+                    } 
+                    //the other variables that do not change
+                    else {
                         if (do_obj.start[i].length > 1){
                             doStr += "( "
                         }
@@ -1280,6 +1320,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                     }
                 }
+                // if there are extra variables that got added later in the program add them here
                 if (do_obj.program_variant == 0){
                     for (let i = do_obj.start.length; i < program_obj.start.length; i++){
                         doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
@@ -1298,14 +1339,18 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
             break;
         case 1:
             doStr += "[ "
+            //check if the bool value is true
             if (do_obj.bool[0]){
                 for (let i = 0; i < do_obj.start.length; i++) {
+                    //add & between variables
                     if ( i > 0){
                         doStr += " & ";
                     }
+                    //the counter variable
                     if (i == do_obj.index){
                         doStr += do_obj.value + " <= " + do_obj.variable[i];
                     }
+                    //the variable that changes
                     else if( i == do_obj.index2){
                         if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += "( "
@@ -1330,7 +1375,9 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         if (do_obj.start[i].length > 1 || do_obj.start[do_obj.index2].length > 1){
                             doStr += ")";
                         }
-                    } else {
+                    }
+                    //the other variables that do not change 
+                    else {
                         if (do_obj.start[i].length > 1){
                             doStr += "( "
                         }
@@ -1349,6 +1396,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
                         }
                     }
                 }
+                // if there are extra variables that got added later in the program add them here
                 if (do_obj.program_variant == 0){
                     for (let i = do_obj.start.length; i < program_obj.start.length; i++){
                         doStr += " & " + program_obj.variable[i] + " = " + program_obj.start[i];
@@ -1368,6 +1416,7 @@ function assembleDo(do_obj:Do, program_obj:Program): string{
         default:
             break;
     }
+    //add commands
     for (let i = 0; i < do_obj.program.length; i++) {
         if(i > 0){
             doStr += ";\n\t";
